@@ -133,6 +133,7 @@ export function VideoPlayer({
                 ))}
               </video>
             </div>
+            <PlayerControls videoRef={videoRef} />
             <div className="absolute top-2 right-2 flex gap-1">
               <Button variant="ghost" size="icon" onClick={() => setNotesOpen(!notesOpen)} className="text-primary-foreground hover:bg-primary-foreground/20">
                 <Bookmark className="h-4 w-4" />
