@@ -8,6 +8,10 @@ export interface VideoFile {
   duration?: number;
   thumbnail?: string;
   subtitleFiles: SubtitleFile[];
+  // Extended metadata
+  format: string;
+  size: number; // bytes
+  lastModified: number; // timestamp
 }
 
 export interface SubtitleFile {
@@ -53,7 +57,6 @@ export async function scanDirectory(
 
   await processDirectory(dirHandle, parentPath || dirHandle.name, allVideos, playlists);
 
-  // Create a root playlist for videos directly in root
   const rootVideos = allVideos.filter(v => v.folder === (parentPath || dirHandle.name));
   if (rootVideos.length > 0) {
     playlists.unshift({
@@ -84,13 +87,12 @@ async function processDirectory(
     }
   }
 
-  // Find video and subtitle files
   const videoFiles = files.filter(f => VIDEO_EXTENSIONS.includes(getExtension(f.name)));
   const subtitleFilesRaw = files.filter(f => SUBTITLE_EXTENSIONS.includes(getExtension(f.name)));
 
   const folderVideos: VideoFile[] = videoFiles.map(vf => {
     const baseName = getBaseName(vf.name);
-    // Match subtitles: videoname.en.srt, videoname.srt, etc.
+    const ext = getExtension(vf.name).replace('.', '');
     const matchingSubs = subtitleFilesRaw
       .filter(sf => {
         const subBase = getBaseName(sf.name);
@@ -100,14 +102,11 @@ async function processDirectory(
         const subBase = getBaseName(sf.name);
         const parts = subBase.split('.');
         const lang = parts.length > 1 ? parts[parts.length - 1] : 'default';
-        const ext = getExtension(sf.name);
         return {
           name: sf.name,
           language: lang,
           file: sf.file,
           url: URL.createObjectURL(sf.file),
-          // Convert SRT to VTT on-the-fly if needed
-          needsConversion: ext === '.srt' || ext === '.ass' || ext === '.ssa' || ext === '.sub',
         };
       });
 
@@ -121,15 +120,16 @@ async function processDirectory(
       file: vf.file,
       url,
       subtitleFiles: matchingSubs,
+      format: ext,
+      size: vf.file.size,
+      lastModified: vf.file.lastModified,
     };
   });
 
   allVideos.push(...folderVideos);
 
-  // Process subdirectories
   for (const subdir of subdirs) {
     const subPath = currentPath + '/' + subdir.name;
-    const beforeCount = allVideos.length;
     await processDirectory(subdir.handle, subPath, allVideos, playlists);
     const subVideos = allVideos.filter(v => v.folder === subPath);
     if (subVideos.length > 0) {
@@ -156,13 +156,11 @@ export async function loadSubtitleAsVtt(sub: SubtitleFile): Promise<string> {
   if (ext === '.vtt') {
     return sub.url;
   }
-  // Convert SRT to VTT
   if (ext === '.srt') {
     const vttText = convertSrtToVtt(text);
     const blob = new Blob([vttText], { type: 'text/vtt' });
     return URL.createObjectURL(blob);
   }
-  // For other formats, attempt basic conversion
   const vttText = convertSrtToVtt(text);
   const blob = new Blob([vttText], { type: 'text/vtt' });
   return URL.createObjectURL(blob);
