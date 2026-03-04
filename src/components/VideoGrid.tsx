@@ -1,6 +1,9 @@
 import { VideoFile } from '@/lib/fileScanner';
 import { VideoCard } from './VideoCard';
 import { WatchHistoryEntry } from '@/hooks/useWatchHistory';
+import { LayoutMode } from '@/hooks/useLayoutPreference';
+import { Play, Subtitles, Bookmark } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 interface VideoGridProps {
   videos: VideoFile[];
@@ -8,6 +11,7 @@ interface VideoGridProps {
   watchHistory?: Record<string, WatchHistoryEntry>;
   noteCounts?: Record<string, number>;
   videoTags?: Record<string, string[]>;
+  layout?: LayoutMode;
 }
 
 function formatTime(seconds: number): string {
@@ -16,7 +20,7 @@ function formatTime(seconds: number): string {
   return `${m}:${s.toString().padStart(2, '0')}`;
 }
 
-export function VideoGrid({ videos, onPlay, watchHistory = {}, noteCounts = {}, videoTags = {} }: VideoGridProps) {
+export function VideoGrid({ videos, onPlay, watchHistory = {}, noteCounts = {}, videoTags = {}, layout = 'grid' }: VideoGridProps) {
   if (videos.length === 0) {
     return (
       <div className="flex flex-1 items-center justify-center text-muted-foreground p-12">
@@ -25,8 +29,70 @@ export function VideoGrid({ videos, onPlay, watchHistory = {}, noteCounts = {}, 
     );
   }
 
+  if (layout === 'list') {
+    return (
+      <div className="flex flex-col gap-1 p-4">
+        {videos.map(video => {
+          const entry = watchHistory[video.path];
+          const resumePercent = entry && entry.duration > 0 ? (entry.position / entry.duration) * 100 : undefined;
+          const tags = videoTags[video.path];
+          const folderName = video.folder.split('/').pop() || '';
+
+          return (
+            <div
+              key={video.id}
+              onClick={() => onPlay(video)}
+              className="flex items-center gap-4 p-3 rounded-lg cursor-pointer hover:bg-accent transition-colors group"
+            >
+              <div className="relative w-40 aspect-video bg-muted rounded-md overflow-hidden shrink-0">
+                <div className="w-full h-full flex items-center justify-center">
+                  <Play className="h-6 w-6 text-muted-foreground group-hover:text-primary transition-colors" />
+                </div>
+                {resumePercent != null && resumePercent > 0 && resumePercent < 95 && (
+                  <div className="absolute bottom-0 left-0 right-0 h-1 bg-muted-foreground/20">
+                    <div className="h-full bg-primary" style={{ width: `${resumePercent}%` }} />
+                  </div>
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-sm font-medium truncate">{video.name}</h3>
+                <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+                  <span>{folderName}</span>
+                  {video.format && <span className="uppercase">{video.format}</span>}
+                  {video.size > 0 && <span>{(video.size / (1024 * 1024)).toFixed(1)} MB</span>}
+                  {video.subtitleFiles.length > 0 && (
+                    <span className="flex items-center gap-1"><Subtitles className="h-3 w-3" /> CC</span>
+                  )}
+                  {noteCounts[video.path] > 0 && (
+                    <span className="flex items-center gap-1"><Bookmark className="h-3 w-3" /> {noteCounts[video.path]}</span>
+                  )}
+                </div>
+                {tags && tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {tags.slice(0, 5).map(tag => (
+                      <Badge key={tag} variant="secondary" className="text-[10px] px-1.5 py-0">{tag}</Badge>
+                    ))}
+                  </div>
+                )}
+              </div>
+              {entry && (
+                <span className="text-[10px] text-primary shrink-0">
+                  {formatTime(entry.position)}
+                </span>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
+  const gridClass = layout === 'compact'
+    ? 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-2 p-4'
+    : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-4';
+
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-4">
+    <div className={gridClass}>
       {videos.map(video => {
         const entry = watchHistory[video.path];
         const resumePercent = entry && entry.duration > 0

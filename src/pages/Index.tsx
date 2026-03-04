@@ -10,45 +10,59 @@ import { useVideoLibrary } from '@/hooks/useVideoLibrary';
 import { useWatchHistory } from '@/hooks/useWatchHistory';
 import { useVideoNotes } from '@/hooks/useVideoNotes';
 import { useTagManager } from '@/hooks/useTagManager';
+import { useTheme } from '@/hooks/useTheme';
+import { useLayoutPreference } from '@/hooks/useLayoutPreference';
+import { useVoiceControl } from '@/hooks/useVoiceControl';
+import { useDataExport } from '@/hooks/useDataExport';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Loader2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 const Index = () => {
   const {
-    videos,
-    allVideos,
-    playlists,
-    currentVideo,
-    currentPlaylist,
-    isLoading,
-    isMiniPlayer,
-    filterPlaylist,
-    openFolder,
-    playVideo,
-    playNext,
-    playPrev,
-    setCurrentVideo,
-    setIsMiniPlayer,
-    setFilterPlaylist,
+    videos, allVideos, playlists, currentVideo, currentPlaylist,
+    isLoading, isMiniPlayer, filterPlaylist,
+    openFolder, playVideo, playNext, playPrev,
+    setCurrentVideo, setIsMiniPlayer, setFilterPlaylist,
   } = useVideoLibrary();
 
   const { history, updatePosition, getEntry, getRecentlyWatched } = useWatchHistory();
   const { notes, addNote, removeNote, getNotesForVideo, getNoteCount } = useVideoNotes();
   const { tags, smartPlaylists, addTag, removeTag, getTagsForVideo, getAllTags, addSmartPlaylist, removeSmartPlaylist } = useTagManager();
+  const { mode, preset, setMode, setPreset } = useTheme();
+  const { layout, setLayout } = useLayoutPreference();
+  const { exportData, importData } = useDataExport();
+  const { toast } = useToast();
 
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [showingHistory, setShowingHistory] = useState(false);
   const [activeSmartPlaylist, setActiveSmartPlaylist] = useState<string | null>(null);
 
-  // Sort & filter state
   const [sortField, setSortField] = useState<SortField>('name');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [filters, setFilters] = useState<FilterState>({ formats: [], durationRange: 'all', tags: [] });
 
+  // Voice control
+  const voice = useVoiceControl({
+    onPlay: () => {
+      // Resume or play first video
+      if (currentVideo) {
+        const vid = document.querySelector('video');
+        vid?.play();
+      }
+    },
+    onPause: () => {
+      const vid = document.querySelector('video');
+      vid?.pause();
+    },
+    onNext: playNext,
+    onPrevious: playPrev,
+    onSearch: (q) => setSearchQuery(q),
+  });
+
   const recentlyWatched = getRecentlyWatched(20);
 
-  // Get videos for history view
   const historyVideos = useMemo(() => {
     if (!showingHistory) return [];
     return recentlyWatched
@@ -56,12 +70,10 @@ const Index = () => {
       .filter(Boolean) as typeof allVideos;
   }, [showingHistory, recentlyWatched, allVideos]);
 
-  // Smart playlist filtering
   const smartFilteredVideos = useMemo(() => {
     if (!activeSmartPlaylist) return null;
     const sp = smartPlaylists.find(s => s.id === activeSmartPlaylist);
     if (!sp) return null;
-
     const query = sp.query.toLowerCase();
     if (query.startsWith('tag:')) {
       const tag = query.substring(4);
@@ -72,7 +84,6 @@ const Index = () => {
 
   const baseVideos = showingHistory ? historyVideos : (smartFilteredVideos ?? videos);
 
-  // Available formats for filter dropdown
   const availableFormats = useMemo(() => {
     const fmts = new Set(allVideos.map(v => v.format).filter(Boolean));
     return Array.from(fmts).sort();
@@ -80,27 +91,20 @@ const Index = () => {
 
   const allTagsList = getAllTags();
 
-  // Apply search, filters, and sort
   const processedVideos = useMemo(() => {
     let result = [...baseVideos];
-
-    // Search
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       result = result.filter(v => v.name.toLowerCase().includes(q));
     }
-
-    // Format filter
     if (filters.formats.length > 0) {
       result = result.filter(v => filters.formats.includes(v.format));
     }
-
-    // Duration filter (uses the stored duration from watch history or video metadata)
     if (filters.durationRange !== 'all') {
       result = result.filter(v => {
         const entry = getEntry(v.path);
         const dur = entry?.duration || v.duration || 0;
-        if (dur === 0) return true; // include if unknown
+        if (dur === 0) return true;
         const mins = dur / 60;
         if (filters.durationRange === 'short') return mins < 5;
         if (filters.durationRange === 'medium') return mins >= 5 && mins <= 30;
@@ -108,16 +112,12 @@ const Index = () => {
         return true;
       });
     }
-
-    // Tag filter
     if (filters.tags.length > 0) {
       result = result.filter(v => {
         const vTags = getTagsForVideo(v.path);
         return filters.tags.some(t => vTags.includes(t));
       });
     }
-
-    // Sort
     result.sort((a, b) => {
       let cmp = 0;
       if (sortField === 'name') cmp = a.name.localeCompare(b.name);
@@ -126,11 +126,9 @@ const Index = () => {
       else if (sortField === 'format') cmp = a.format.localeCompare(b.format);
       return sortDirection === 'desc' ? -cmp : cmp;
     });
-
     return result;
   }, [baseVideos, searchQuery, filters, sortField, sortDirection, getEntry, getTagsForVideo]);
 
-  // Note counts & tag maps for VideoGrid
   const noteCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     allVideos.forEach(v => {
@@ -169,12 +167,32 @@ const Index = () => {
     setFilterPlaylist(null);
   }, [setFilterPlaylist]);
 
+  const handleImport = useCallback(async () => {
+    const success = await importData();
+    if (success) {
+      toast({ title: 'Data imported', description: 'Reload the page to see changes.' });
+    } else {
+      toast({ title: 'Import failed', variant: 'destructive' });
+    }
+  }, [importData, toast]);
+
   return (
-    <div className="flex h-screen flex-col bg-background dark">
+    <div className="flex h-screen flex-col bg-background">
       <Header
         onOpenFolder={openFolder}
         onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
         onSearch={setSearchQuery}
+        themeMode={mode}
+        themePreset={preset}
+        onThemeModeChange={setMode}
+        onThemePresetChange={setPreset}
+        layout={layout}
+        onLayoutChange={setLayout}
+        voiceSupported={voice.isSupported}
+        voiceListening={voice.isListening}
+        onVoiceToggle={voice.isListening ? voice.stopListening : voice.startListening}
+        onExport={exportData}
+        onImport={handleImport}
       />
 
       <div className="flex flex-1 overflow-hidden">
@@ -238,6 +256,7 @@ const Index = () => {
                   watchHistory={history}
                   noteCounts={noteCounts}
                   videoTags={videoTagsMap}
+                  layout={layout}
                 />
               </ScrollArea>
             </>
