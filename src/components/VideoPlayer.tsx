@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { NotesPanel } from '@/components/NotesPanel';
 import { TagEditor } from '@/components/TagEditor';
+import { PlayerControls } from '@/components/PlayerControls';
 import { VideoNote } from '@/hooks/useVideoNotes';
 
 interface VideoPlayerProps {
