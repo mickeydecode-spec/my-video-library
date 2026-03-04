@@ -1,7 +1,10 @@
-import { Folder, Home, List } from 'lucide-react';
+import { Clock, Folder, Home, List, Sparkles, Tag, Trash2 } from 'lucide-react';
 import { Playlist } from '@/lib/fileScanner';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { WatchHistoryEntry } from '@/hooks/useWatchHistory';
+import { SmartPlaylist } from '@/hooks/useTagManager';
+import { Button } from '@/components/ui/button';
 
 interface SidebarProps {
   playlists: Playlist[];
@@ -9,9 +12,22 @@ interface SidebarProps {
   onSelectPlaylist: (path: string | null) => void;
   isOpen: boolean;
   totalVideos: number;
+  // History
+  recentlyWatched: WatchHistoryEntry[];
+  onShowHistory: () => void;
+  showingHistory: boolean;
+  // Smart playlists
+  smartPlaylists: SmartPlaylist[];
+  activeSmartPlaylist: string | null;
+  onSelectSmartPlaylist: (id: string | null) => void;
+  onRemoveSmartPlaylist: (id: string) => void;
 }
 
-export function Sidebar({ playlists, activePlaylist, onSelectPlaylist, isOpen, totalVideos }: SidebarProps) {
+export function Sidebar({
+  playlists, activePlaylist, onSelectPlaylist, isOpen, totalVideos,
+  recentlyWatched, onShowHistory, showingHistory,
+  smartPlaylists, activeSmartPlaylist, onSelectSmartPlaylist, onRemoveSmartPlaylist,
+}: SidebarProps) {
   if (!isOpen) return null;
 
   return (
@@ -19,10 +35,10 @@ export function Sidebar({ playlists, activePlaylist, onSelectPlaylist, isOpen, t
       <ScrollArea className="h-full">
         <div className="p-2 space-y-1">
           <button
-            onClick={() => onSelectPlaylist(null)}
+            onClick={() => { onSelectPlaylist(null); onSelectSmartPlaylist(null); }}
             className={cn(
               "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-accent",
-              activePlaylist === null && "bg-accent font-medium"
+              activePlaylist === null && !showingHistory && !activeSmartPlaylist && "bg-accent font-medium"
             )}
           >
             <Home className="h-4 w-4 shrink-0" />
@@ -30,6 +46,55 @@ export function Sidebar({ playlists, activePlaylist, onSelectPlaylist, isOpen, t
             <span className="ml-auto text-xs text-muted-foreground">{totalVideos}</span>
           </button>
 
+          {/* History */}
+          {recentlyWatched.length > 0 && (
+            <button
+              onClick={onShowHistory}
+              className={cn(
+                "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-accent",
+                showingHistory && "bg-accent font-medium"
+              )}
+            >
+              <Clock className="h-4 w-4 shrink-0" />
+              <span className="truncate">History</span>
+              <span className="ml-auto text-xs text-muted-foreground">{recentlyWatched.length}</span>
+            </button>
+          )}
+
+          {/* Smart Playlists */}
+          {smartPlaylists.length > 0 && (
+            <>
+              <div className="pt-4 pb-1 px-3">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                  <Sparkles className="h-3 w-3" /> Smart Playlists
+                </p>
+              </div>
+              {smartPlaylists.map(sp => (
+                <div key={sp.id} className="flex items-center group">
+                  <button
+                    onClick={() => onSelectSmartPlaylist(sp.id)}
+                    className={cn(
+                      "flex flex-1 items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-accent",
+                      activeSmartPlaylist === sp.id && "bg-accent font-medium"
+                    )}
+                  >
+                    <Tag className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    <span className="truncate">{sp.name}</span>
+                  </button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 opacity-0 group-hover:opacity-100 shrink-0"
+                    onClick={() => onRemoveSmartPlaylist(sp.id)}
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                </div>
+              ))}
+            </>
+          )}
+
+          {/* Folder Playlists */}
           {playlists.length > 0 && (
             <div className="pt-4 pb-1 px-3">
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
@@ -41,7 +106,7 @@ export function Sidebar({ playlists, activePlaylist, onSelectPlaylist, isOpen, t
           {playlists.map(pl => (
             <button
               key={pl.path}
-              onClick={() => onSelectPlaylist(pl.path)}
+              onClick={() => { onSelectPlaylist(pl.path); onSelectSmartPlaylist(null); }}
               className={cn(
                 "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-accent",
                 activePlaylist === pl.path && "bg-accent font-medium"
