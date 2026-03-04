@@ -1,12 +1,20 @@
 import { VideoFile } from '@/lib/fileScanner';
 import { loadSubtitleAsVtt } from '@/lib/fileScanner';
-import { Bookmark, Minimize2, SkipBack, SkipForward, X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Bookmark, X } from 'lucide-react';
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { NotesPanel } from '@/components/NotesPanel';
 import { TagEditor } from '@/components/TagEditor';
 import { PlayerControls } from '@/components/PlayerControls';
 import { VideoNote } from '@/hooks/useVideoNotes';
+import {
+  Menubar,
+  MenubarContent,
+  MenubarItem,
+  MenubarMenu,
+  MenubarSeparator,
+  MenubarShortcut,
+  MenubarTrigger,
+} from '@/components/ui/menubar';
 
 interface VideoPlayerProps {
   video: VideoFile;
@@ -14,14 +22,11 @@ interface VideoPlayerProps {
   onMinimize: () => void;
   onNext: () => void;
   onPrev: () => void;
-  // Watch history
   resumePosition?: number;
   onPositionUpdate?: (position: number, duration: number) => void;
-  // Notes
   notes: VideoNote[];
   onAddNote: (timestamp: number, note: string) => void;
   onRemoveNote: (id: string) => void;
-  // Tags
   tags: string[];
   allTags: string[];
   onAddTag: (tag: string) => void;
@@ -64,7 +69,6 @@ export function VideoPlayer({
   useEffect(() => {
     const el = videoRef.current;
     if (!el || hasResumed.current || !resumePosition || resumePosition < 2) return;
-    
     const handleCanPlay = () => {
       if (!hasResumed.current && resumePosition < el.duration - 5) {
         el.currentTime = resumePosition;
@@ -79,104 +83,207 @@ export function VideoPlayer({
   useEffect(() => {
     const el = videoRef.current;
     if (!el || !onPositionUpdate) return;
-    
     const interval = setInterval(() => {
-      if (!el.paused && el.duration) {
-        onPositionUpdate(el.currentTime, el.duration);
-      }
+      if (!el.paused && el.duration) onPositionUpdate(el.currentTime, el.duration);
     }, 5000);
-
     const handlePause = () => {
       if (el.duration) onPositionUpdate(el.currentTime, el.duration);
     };
     el.addEventListener('pause', handlePause);
-
     return () => {
       clearInterval(interval);
       el.removeEventListener('pause', handlePause);
-      // Save on unmount
       if (el.duration) onPositionUpdate(el.currentTime, el.duration);
     };
   }, [onPositionUpdate, video.id]);
 
-  const getCurrentTime = useCallback(() => {
-    return videoRef.current?.currentTime || 0;
-  }, []);
-
+  const getCurrentTime = useCallback(() => videoRef.current?.currentTime || 0, []);
   const seekTo = useCallback((time: number) => {
     if (videoRef.current) videoRef.current.currentTime = time;
   }, []);
 
+  const handleStop = useCallback(() => {
+    const el = videoRef.current;
+    if (!el) return;
+    el.pause();
+    el.currentTime = 0;
+  }, []);
+
+  const handleScreenshot = useCallback(() => {
+    const el = videoRef.current;
+    if (!el) return;
+    const canvas = document.createElement('canvas');
+    canvas.width = el.videoWidth;
+    canvas.height = el.videoHeight;
+    canvas.getContext('2d')?.drawImage(el, 0, 0);
+    const link = document.createElement('a');
+    link.download = `screenshot-${Math.floor(el.currentTime)}s.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  }, []);
+
+  // Double-click video to toggle fullscreen
+  const handleDoubleClick = useCallback(() => {
+    const el = videoRef.current;
+    if (!el) return;
+    if (document.fullscreenElement) document.exitFullscreen();
+    else el.closest('.vlc-player-root')?.requestFullscreen?.();
+  }, []);
+
+  // Click video to toggle play/pause
+  const handleVideoClick = useCallback(() => {
+    const el = videoRef.current;
+    if (!el) return;
+    el.paused ? el.play() : el.pause();
+  }, []);
+
   return (
-    <div className="flex flex-col bg-background h-full">
-      <div className="flex flex-1 overflow-hidden">
-        <div className="flex-1 flex flex-col">
-          <div className="relative bg-player-bg">
-            <div className="max-w-5xl mx-auto">
-              <video
-                ref={videoRef}
-                className="w-full aspect-video"
-                controls
-                autoPlay
-                key={video.id}
-              >
-                <source src={video.url} />
-                {subtitleUrls.map((s, i) => (
-                  <track
-                    key={i}
-                    kind="subtitles"
-                    src={s.url}
-                    srcLang={s.lang}
-                    label={s.lang}
-                    default={i === 0}
-                  />
-                ))}
-              </video>
-            </div>
-            <PlayerControls videoRef={videoRef} />
-            <div className="absolute top-2 right-2 flex gap-1">
-              <Button variant="ghost" size="icon" onClick={() => setNotesOpen(!notesOpen)} className="text-primary-foreground hover:bg-primary-foreground/20">
-                <Bookmark className="h-4 w-4" />
-              </Button>
-              <Button variant="ghost" size="icon" onClick={onMinimize} className="text-primary-foreground hover:bg-primary-foreground/20">
-                <Minimize2 className="h-4 w-4" />
-              </Button>
-              <Button variant="ghost" size="icon" onClick={onClose} className="text-primary-foreground hover:bg-primary-foreground/20">
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
+    <div className="vlc-player-root flex flex-col h-full" style={{ background: '#000' }}>
+      {/* VLC Menu Bar */}
+      <Menubar className="rounded-none border-0 border-b px-1 h-7" style={{ background: '#e8e8e8', borderColor: '#c8c8c8' }}>
+        <MenubarMenu>
+          <MenubarTrigger className="text-xs px-2 py-0.5 h-6 font-normal" style={{ color: '#333' }}>Media</MenubarTrigger>
+          <MenubarContent>
+            <MenubarItem onClick={onClose}>Close <MenubarShortcut>Ctrl+W</MenubarShortcut></MenubarItem>
+            <MenubarSeparator />
+            <MenubarItem onClick={onMinimize}>Minimize Player</MenubarItem>
+          </MenubarContent>
+        </MenubarMenu>
+        <MenubarMenu>
+          <MenubarTrigger className="text-xs px-2 py-0.5 h-6 font-normal" style={{ color: '#333' }}>Playback</MenubarTrigger>
+          <MenubarContent>
+            <MenubarItem onClick={onPrev}>Previous <MenubarShortcut>P</MenubarShortcut></MenubarItem>
+            <MenubarItem onClick={onNext}>Next <MenubarShortcut>N</MenubarShortcut></MenubarItem>
+            <MenubarSeparator />
+            <MenubarItem onClick={() => { if (videoRef.current) videoRef.current.playbackRate = 1; }}>
+              Normal Speed
+            </MenubarItem>
+            <MenubarItem onClick={() => { if (videoRef.current) videoRef.current.playbackRate = Math.min(4, videoRef.current.playbackRate + 0.25); }}>
+              Faster <MenubarShortcut>]</MenubarShortcut>
+            </MenubarItem>
+            <MenubarItem onClick={() => { if (videoRef.current) videoRef.current.playbackRate = Math.max(0.25, videoRef.current.playbackRate - 0.25); }}>
+              Slower <MenubarShortcut>[</MenubarShortcut>
+            </MenubarItem>
+          </MenubarContent>
+        </MenubarMenu>
+        <MenubarMenu>
+          <MenubarTrigger className="text-xs px-2 py-0.5 h-6 font-normal" style={{ color: '#333' }}>Audio</MenubarTrigger>
+          <MenubarContent>
+            <MenubarItem onClick={() => { if (videoRef.current) videoRef.current.muted = !videoRef.current.muted; }}>
+              Mute <MenubarShortcut>M</MenubarShortcut>
+            </MenubarItem>
+            <MenubarSeparator />
+            <MenubarItem disabled className="text-xs text-muted-foreground">Audio tracks shown in controls below</MenubarItem>
+          </MenubarContent>
+        </MenubarMenu>
+        <MenubarMenu>
+          <MenubarTrigger className="text-xs px-2 py-0.5 h-6 font-normal" style={{ color: '#333' }}>Video</MenubarTrigger>
+          <MenubarContent>
+            <MenubarItem onClick={() => {
+              if (document.fullscreenElement) document.exitFullscreen();
+              else videoRef.current?.closest('.vlc-player-root')?.requestFullscreen?.();
+            }}>
+              Fullscreen <MenubarShortcut>F</MenubarShortcut>
+            </MenubarItem>
+            <MenubarItem onClick={handleScreenshot}>
+              Take Screenshot <MenubarShortcut>Ctrl+S</MenubarShortcut>
+            </MenubarItem>
+          </MenubarContent>
+        </MenubarMenu>
+        <MenubarMenu>
+          <MenubarTrigger className="text-xs px-2 py-0.5 h-6 font-normal" style={{ color: '#333' }}>Subtitle</MenubarTrigger>
+          <MenubarContent>
+            {video.subtitleFiles.length > 0
+              ? video.subtitleFiles.map((s, i) => (
+                <MenubarItem key={i}>{s.language} - {s.name}</MenubarItem>
+              ))
+              : <MenubarItem disabled>No subtitles</MenubarItem>
+            }
+          </MenubarContent>
+        </MenubarMenu>
+        <MenubarMenu>
+          <MenubarTrigger className="text-xs px-2 py-0.5 h-6 font-normal" style={{ color: '#333' }}>Tools</MenubarTrigger>
+          <MenubarContent>
+            <MenubarItem onClick={() => setNotesOpen(!notesOpen)}>
+              Notes & Bookmarks
+            </MenubarItem>
+            <MenubarSeparator />
+            <MenubarItem disabled className="text-xs">
+              {video.name}
+            </MenubarItem>
+            <MenubarItem disabled className="text-xs text-muted-foreground">
+              {video.format?.toUpperCase()} · {video.size > 0 ? `${(video.size / (1024 * 1024)).toFixed(1)} MB` : ''}
+            </MenubarItem>
+          </MenubarContent>
+        </MenubarMenu>
+        <MenubarMenu>
+          <MenubarTrigger className="text-xs px-2 py-0.5 h-6 font-normal" style={{ color: '#333' }}>View</MenubarTrigger>
+          <MenubarContent>
+            <MenubarItem onClick={onMinimize}>Mini Player</MenubarItem>
+          </MenubarContent>
+        </MenubarMenu>
+
+        {/* Right side: close button */}
+        <div className="flex-1" />
+        <button
+          onClick={() => setNotesOpen(!notesOpen)}
+          className="p-1 rounded hover:bg-black/10 transition-colors mr-1"
+          title="Notes & Bookmarks"
+        >
+          <Bookmark className="h-3.5 w-3.5" style={{ color: '#555' }} />
+        </button>
+        <button
+          onClick={onClose}
+          className="p-1 rounded hover:bg-black/10 transition-colors"
+          title="Close"
+        >
+          <X className="h-3.5 w-3.5" style={{ color: '#555' }} />
+        </button>
+      </Menubar>
+
+      {/* Main content area */}
+      <div className="flex flex-1 overflow-hidden min-h-0">
+        {/* Video area - takes all space */}
+        <div className="flex-1 flex flex-col min-h-0">
+          <div
+            className="flex-1 flex items-center justify-center min-h-0"
+            style={{ background: '#000' }}
+          >
+            <video
+              ref={videoRef}
+              className="max-w-full max-h-full w-full h-full"
+              style={{ objectFit: 'contain' }}
+              autoPlay
+              key={video.id}
+              onClick={handleVideoClick}
+              onDoubleClick={handleDoubleClick}
+            >
+              <source src={video.url} />
+              {subtitleUrls.map((s, i) => (
+                <track key={i} kind="subtitles" src={s.url} srcLang={s.lang} label={s.lang} default={i === 0} />
+              ))}
+            </video>
           </div>
-          <div className="max-w-5xl mx-auto w-full p-4">
-            <h1 className="text-xl font-semibold">{video.name}</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              {video.folder.split('/').pop()}
-              {video.format && <span className="ml-2 uppercase">{video.format}</span>}
-              {video.size > 0 && <span className="ml-2">{(video.size / (1024 * 1024)).toFixed(1)} MB</span>}
-            </p>
-            <div className="flex gap-2 mt-3">
-              <Button variant="secondary" size="sm" onClick={onPrev} className="gap-1">
-                <SkipBack className="h-4 w-4" /> Previous
-              </Button>
-              <Button variant="secondary" size="sm" onClick={onNext} className="gap-1">
-                Next <SkipForward className="h-4 w-4" />
-              </Button>
+
+          {/* VLC bottom controls */}
+          <PlayerControls
+            videoRef={videoRef}
+            onPrev={onPrev}
+            onNext={onNext}
+            onStop={handleStop}
+          />
+
+          {/* Tags bar below controls */}
+          <div className="px-2 py-1" style={{ background: '#e0e0e0', borderTop: '1px solid #c8c8c8' }}>
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-medium truncate" style={{ color: '#333' }}>{video.name}</span>
+              <div className="flex-1" />
+              <TagEditor tags={tags} allTags={allTags} onAddTag={onAddTag} onRemoveTag={onRemoveTag} />
             </div>
-            <div className="mt-3">
-              <TagEditor
-                tags={tags}
-                allTags={allTags}
-                onAddTag={onAddTag}
-                onRemoveTag={onRemoveTag}
-              />
-            </div>
-            {video.subtitleFiles.length > 0 && (
-              <p className="text-xs text-muted-foreground mt-2">
-                Subtitles: {video.subtitleFiles.map(s => s.language).join(', ')}
-              </p>
-            )}
           </div>
         </div>
 
+        {/* Notes panel */}
         <NotesPanel
           notes={notes}
           onAddNote={onAddNote}

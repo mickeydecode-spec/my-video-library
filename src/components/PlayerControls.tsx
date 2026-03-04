@@ -1,25 +1,24 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { Button } from '@/components/ui/button';
-import { Slider } from '@/components/ui/slider';
 import {
-  Camera, Repeat, Gauge, RatioIcon, Volume2, VolumeX,
-  Languages, ChevronUp, ChevronDown, Type
+  Play, Pause, Square, SkipBack, SkipForward,
+  Maximize, ListVideo, Repeat, Shuffle,
+  Volume2, Volume1, VolumeX, Volume,
+  Camera, Gauge, RatioIcon, Languages, Type,
+  ChevronUp, ChevronDown
 } from 'lucide-react';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Slider } from '@/components/ui/slider';
+import { Button } from '@/components/ui/button';
 
 interface PlayerControlsProps {
   videoRef: React.RefObject<HTMLVideoElement>;
+  onPrev: () => void;
+  onNext: () => void;
+  onStop: () => void;
 }
 
 const SPEED_OPTIONS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 3, 4];
@@ -32,19 +31,71 @@ const ASPECT_OPTIONS = [
   { label: '21:9', value: '21/9' },
 ];
 
-export function PlayerControls({ videoRef }: PlayerControlsProps) {
+function formatTime(seconds: number): string {
+  if (!seconds || !isFinite(seconds)) return '00:00';
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = Math.floor(seconds % 60);
+  if (h > 0) return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+}
+
+export function PlayerControls({ videoRef, onPrev, onNext, onStop }: PlayerControlsProps) {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [volume, setVolume] = useState(100);
+  const [isMuted, setIsMuted] = useState(false);
   const [speed, setSpeed] = useState(1);
+  const [isLooping, setIsLooping] = useState(false);
+  const [isShuffled, setIsShuffled] = useState(false);
   const [abLoop, setAbLoop] = useState<{ a: number | null; b: number | null }>({ a: null, b: null });
   const [aspect, setAspect] = useState('auto');
   const [volumeBoost, setVolumeBoost] = useState(100);
   const [audioTracks, setAudioTracks] = useState<{ id: number; label: string; language: string; enabled: boolean }[]>([]);
   const [subtitleSize, setSubtitleSize] = useState(100);
+  const [isSeeking, setIsSeeking] = useState(false);
+
   const gainNodeRef = useRef<GainNode | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const sourceRef = useRef<MediaElementAudioSourceNode | null>(null);
   const abIntervalRef = useRef<number | null>(null);
+  const seekbarRef = useRef<HTMLDivElement>(null);
 
-  // Initialize Web Audio API for volume boost
+  // Sync play state
+  useEffect(() => {
+    const el = videoRef.current;
+    if (!el) return;
+    const onPlay = () => setIsPlaying(true);
+    const onPause = () => setIsPlaying(false);
+    const onTime = () => { if (!isSeeking) setCurrentTime(el.currentTime); };
+    const onDur = () => setDuration(el.duration);
+    const onVol = () => {
+      setVolume(Math.round(el.volume * 100));
+      setIsMuted(el.muted);
+    };
+    el.addEventListener('play', onPlay);
+    el.addEventListener('pause', onPause);
+    el.addEventListener('timeupdate', onTime);
+    el.addEventListener('loadedmetadata', onDur);
+    el.addEventListener('durationchange', onDur);
+    el.addEventListener('volumechange', onVol);
+    // Init
+    if (el.duration) setDuration(el.duration);
+    setIsPlaying(!el.paused);
+    setVolume(Math.round(el.volume * 100));
+    setIsMuted(el.muted);
+    return () => {
+      el.removeEventListener('play', onPlay);
+      el.removeEventListener('pause', onPause);
+      el.removeEventListener('timeupdate', onTime);
+      el.removeEventListener('loadedmetadata', onDur);
+      el.removeEventListener('durationchange', onDur);
+      el.removeEventListener('volumechange', onVol);
+    };
+  }, [videoRef, isSeeking]);
+
+  // Audio boost init
   const initAudioBoost = useCallback(() => {
     const el = videoRef.current;
     if (!el || sourceRef.current) return;
@@ -57,43 +108,26 @@ export function PlayerControls({ videoRef }: PlayerControlsProps) {
       audioCtxRef.current = ctx;
       sourceRef.current = source;
       gainNodeRef.current = gain;
-    } catch (e) {
-      console.warn('Audio boost init failed:', e);
-    }
+    } catch (e) { console.warn('Audio boost init failed:', e); }
   }, [videoRef]);
 
-  // Detect audio tracks
+  // Audio tracks detection
   useEffect(() => {
     const el = videoRef.current;
     if (!el) return;
-
-    const detectTracks = () => {
+    const detect = () => {
       const at = (el as any).audioTracks;
       if (at && at.length > 0) {
         const tracks: typeof audioTracks = [];
         for (let i = 0; i < at.length; i++) {
-          tracks.push({
-            id: i,
-            label: at[i].label || `Track ${i + 1}`,
-            language: at[i].language || 'unknown',
-            enabled: at[i].enabled,
-          });
+          tracks.push({ id: i, label: at[i].label || `Track ${i + 1}`, language: at[i].language || 'unknown', enabled: at[i].enabled });
         }
         setAudioTracks(tracks);
       }
     };
-
-    el.addEventListener('loadedmetadata', detectTracks);
-    detectTracks();
-    return () => el.removeEventListener('loadedmetadata', detectTracks);
-  }, [videoRef]);
-
-  // Speed control
-  const changeSpeed = useCallback((newSpeed: number) => {
-    if (videoRef.current) {
-      videoRef.current.playbackRate = newSpeed;
-      setSpeed(newSpeed);
-    }
+    el.addEventListener('loadedmetadata', detect);
+    detect();
+    return () => el.removeEventListener('loadedmetadata', detect);
   }, [videoRef]);
 
   // A-B Loop
@@ -102,41 +136,11 @@ export function PlayerControls({ videoRef }: PlayerControlsProps) {
     if (abLoop.a !== null && abLoop.b !== null && videoRef.current) {
       abIntervalRef.current = window.setInterval(() => {
         const el = videoRef.current;
-        if (el && el.currentTime >= abLoop.b!) {
-          el.currentTime = abLoop.a!;
-        }
+        if (el && el.currentTime >= abLoop.b!) el.currentTime = abLoop.a!;
       }, 100);
     }
     return () => { if (abIntervalRef.current) clearInterval(abIntervalRef.current); };
   }, [abLoop, videoRef]);
-
-  const toggleAbLoop = useCallback(() => {
-    const el = videoRef.current;
-    if (!el) return;
-    if (abLoop.a === null) {
-      setAbLoop({ a: el.currentTime, b: null });
-    } else if (abLoop.b === null) {
-      setAbLoop(prev => ({ ...prev, b: el.currentTime }));
-    } else {
-      setAbLoop({ a: null, b: null });
-    }
-  }, [abLoop, videoRef]);
-
-  // Screenshot
-  const takeScreenshot = useCallback(() => {
-    const el = videoRef.current;
-    if (!el) return;
-    const canvas = document.createElement('canvas');
-    canvas.width = el.videoWidth;
-    canvas.height = el.videoHeight;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    ctx.drawImage(el, 0, 0);
-    const link = document.createElement('a');
-    link.download = `screenshot-${Math.floor(el.currentTime)}s.png`;
-    link.href = canvas.toDataURL('image/png');
-    link.click();
-  }, [videoRef]);
 
   // Aspect ratio
   useEffect(() => {
@@ -152,179 +156,305 @@ export function PlayerControls({ videoRef }: PlayerControlsProps) {
     gainNodeRef.current.gain.value = volumeBoost / 100;
   }, [volumeBoost]);
 
-  const handleVolumeBoost = useCallback((val: number[]) => {
-    if (!sourceRef.current) initAudioBoost();
-    setVolumeBoost(val[0]);
-  }, [initAudioBoost]);
-
-  // Switch audio track
-  const switchAudioTrack = useCallback((trackId: string) => {
-    const el = videoRef.current;
-    if (!el) return;
-    const at = (el as any).audioTracks;
-    if (!at) return;
-    for (let i = 0; i < at.length; i++) {
-      at[i].enabled = i === parseInt(trackId);
-    }
-    setAudioTracks(prev => prev.map((t, i) => ({ ...t, enabled: i === parseInt(trackId) })));
-  }, [videoRef]);
-
   // Subtitle size
   useEffect(() => {
-    const el = videoRef.current;
-    if (!el) return;
-    const style = document.createElement('style');
-    style.id = 'mytube-subtitle-style';
     const existing = document.getElementById('mytube-subtitle-style');
     if (existing) existing.remove();
+    const style = document.createElement('style');
+    style.id = 'mytube-subtitle-style';
     style.textContent = `video::cue { font-size: ${subtitleSize}% !important; }`;
     document.head.appendChild(style);
     return () => { style.remove(); };
-  }, [subtitleSize, videoRef]);
+  }, [subtitleSize]);
+
+  const togglePlay = useCallback(() => {
+    const el = videoRef.current;
+    if (!el) return;
+    el.paused ? el.play() : el.pause();
+  }, [videoRef]);
+
+  const changeSpeed = useCallback((s: number) => {
+    if (videoRef.current) { videoRef.current.playbackRate = s; setSpeed(s); }
+  }, [videoRef]);
+
+  const handleVolumeChange = useCallback((val: number[]) => {
+    const el = videoRef.current;
+    if (!el) return;
+    el.volume = val[0] / 100;
+    el.muted = false;
+    setVolume(val[0]);
+    setIsMuted(false);
+  }, [videoRef]);
+
+  const toggleMute = useCallback(() => {
+    const el = videoRef.current;
+    if (!el) return;
+    el.muted = !el.muted;
+  }, [videoRef]);
+
+  const toggleFullscreen = useCallback(() => {
+    const el = videoRef.current;
+    if (!el) return;
+    if (document.fullscreenElement) document.exitFullscreen();
+    else el.closest('.vlc-player-root')?.requestFullscreen?.() || el.requestFullscreen?.();
+  }, [videoRef]);
+
+  const toggleAbLoop = useCallback(() => {
+    const el = videoRef.current;
+    if (!el) return;
+    if (abLoop.a === null) setAbLoop({ a: el.currentTime, b: null });
+    else if (abLoop.b === null) setAbLoop(prev => ({ ...prev, b: el.currentTime }));
+    else setAbLoop({ a: null, b: null });
+  }, [abLoop, videoRef]);
+
+  const takeScreenshot = useCallback(() => {
+    const el = videoRef.current;
+    if (!el) return;
+    const canvas = document.createElement('canvas');
+    canvas.width = el.videoWidth;
+    canvas.height = el.videoHeight;
+    canvas.getContext('2d')?.drawImage(el, 0, 0);
+    const link = document.createElement('a');
+    link.download = `screenshot-${Math.floor(el.currentTime)}s.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  }, [videoRef]);
+
+  const switchAudioTrack = useCallback((trackId: string) => {
+    const at = (videoRef.current as any)?.audioTracks;
+    if (!at) return;
+    for (let i = 0; i < at.length; i++) at[i].enabled = i === parseInt(trackId);
+    setAudioTracks(prev => prev.map((t, i) => ({ ...t, enabled: i === parseInt(trackId) })));
+  }, [videoRef]);
+
+  // Seekbar interaction
+  const handleSeekbarClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const el = videoRef.current;
+    const bar = seekbarRef.current;
+    if (!el || !bar || !duration) return;
+    const rect = bar.getBoundingClientRect();
+    const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    el.currentTime = ratio * duration;
+    setCurrentTime(ratio * duration);
+  }, [videoRef, duration]);
+
+  const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
+
+  const VolumeIcon = isMuted || volume === 0 ? VolumeX : volume < 30 ? Volume : volume < 70 ? Volume1 : Volume2;
 
   // Keyboard shortcuts
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       const el = videoRef.current;
       if (!el) return;
-      // Don't capture when typing in inputs
       if ((e.target as HTMLElement)?.tagName === 'INPUT' || (e.target as HTMLElement)?.tagName === 'TEXTAREA') return;
-
       switch (e.key.toLowerCase()) {
+        case ' ': togglePlay(); e.preventDefault(); break;
         case '[': changeSpeed(Math.max(0.25, speed - 0.25)); e.preventDefault(); break;
         case ']': changeSpeed(Math.min(4, speed + 0.25)); e.preventDefault(); break;
         case 'l': toggleAbLoop(); e.preventDefault(); break;
         case 's': if (e.ctrlKey || e.metaKey) { e.preventDefault(); takeScreenshot(); } break;
         case 'j': el.currentTime = Math.max(0, el.currentTime - 10); e.preventDefault(); break;
-        case 'k': el.paused ? el.play() : el.pause(); e.preventDefault(); break;
+        case 'k': togglePlay(); e.preventDefault(); break;
         case 'arrowleft': el.currentTime = Math.max(0, el.currentTime - 5); e.preventDefault(); break;
         case 'arrowright': el.currentTime += 5; e.preventDefault(); break;
         case 'arrowup': el.volume = Math.min(1, el.volume + 0.05); e.preventDefault(); break;
         case 'arrowdown': el.volume = Math.max(0, el.volume - 0.05); e.preventDefault(); break;
-        case 'f': {
-          if (document.fullscreenElement) document.exitFullscreen();
-          else el.requestFullscreen?.();
-          e.preventDefault();
-          break;
-        }
-        case 'm': el.muted = !el.muted; e.preventDefault(); break;
+        case 'f': toggleFullscreen(); e.preventDefault(); break;
+        case 'm': toggleMute(); e.preventDefault(); break;
       }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [videoRef, speed, changeSpeed, toggleAbLoop, takeScreenshot]);
-
-  const abLabel = abLoop.a === null ? 'A-B' : abLoop.b === null ? `A: ${abLoop.a.toFixed(1)}s` : 'Clear';
+  }, [videoRef, speed, changeSpeed, toggleAbLoop, takeScreenshot, togglePlay, toggleFullscreen, toggleMute]);
 
   return (
-    <div className="flex items-center gap-1 flex-wrap px-2 py-1.5 bg-card/80 backdrop-blur border-t border-border">
-      {/* Speed */}
-      <Popover>
-        <PopoverTrigger asChild>
-          <Button variant="ghost" size="sm" className="h-7 text-xs gap-1 px-2">
-            <Gauge className="h-3.5 w-3.5" /> {speed}x
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-40 p-2" side="top">
-          <p className="text-xs font-medium mb-2 text-muted-foreground">Playback Speed</p>
-          <div className="grid grid-cols-5 gap-1">
-            {SPEED_OPTIONS.map(s => (
-              <Button key={s} variant={speed === s ? 'default' : 'ghost'} size="sm" className="h-7 text-xs px-1" onClick={() => changeSpeed(s)}>
-                {s}x
-              </Button>
-            ))}
+    <div className="flex flex-col select-none" style={{ background: '#e8e8e8', borderTop: '1px solid #c8c8c8' }}>
+      {/* Seekbar - VLC style thin bar */}
+      <div className="px-1 pt-1">
+        <div className="flex items-center gap-2 text-xs" style={{ color: '#333' }}>
+          <span className="font-mono text-[11px] min-w-[45px]">{formatTime(currentTime)}</span>
+          <div
+            ref={seekbarRef}
+            className="flex-1 h-[6px] rounded-sm cursor-pointer relative"
+            style={{ background: '#c0c0c0' }}
+            onClick={handleSeekbarClick}
+          >
+            <div
+              className="absolute top-0 left-0 h-full rounded-sm"
+              style={{ width: `${progress}%`, background: '#ff6600' }}
+            />
+            <div
+              className="absolute top-1/2 -translate-y-1/2 h-3 w-3 rounded-full border border-[#999]"
+              style={{ left: `calc(${progress}% - 6px)`, background: '#ff6600' }}
+            />
           </div>
-        </PopoverContent>
-      </Popover>
+          <span className="font-mono text-[11px] min-w-[45px] text-right">{formatTime(duration)}</span>
+        </div>
+      </div>
 
-      {/* A-B Loop */}
-      <Button variant={abLoop.a !== null ? 'default' : 'ghost'} size="sm" className="h-7 text-xs gap-1 px-2" onClick={toggleAbLoop}>
-        <Repeat className="h-3.5 w-3.5" /> {abLabel}
-      </Button>
+      {/* Transport controls - VLC bottom bar */}
+      <div className="flex items-center gap-0.5 px-1 py-0.5">
+        {/* Play / Pause */}
+        <button
+          onClick={togglePlay}
+          className="p-1.5 rounded hover:bg-black/10 transition-colors"
+          title={isPlaying ? 'Pause' : 'Play'}
+        >
+          {isPlaying
+            ? <Pause className="h-4 w-4" style={{ color: '#333' }} />
+            : <Play className="h-4 w-4" style={{ color: '#333' }} />
+          }
+        </button>
 
-      {/* Screenshot */}
-      <Button variant="ghost" size="sm" className="h-7 text-xs gap-1 px-2" onClick={takeScreenshot} title="Screenshot (Ctrl+S)">
-        <Camera className="h-3.5 w-3.5" />
-      </Button>
+        {/* Previous */}
+        <button onClick={onPrev} className="p-1.5 rounded hover:bg-black/10 transition-colors" title="Previous">
+          <SkipBack className="h-3.5 w-3.5" style={{ color: '#333' }} />
+        </button>
 
-      {/* Aspect Ratio */}
-      <Popover>
-        <PopoverTrigger asChild>
-          <Button variant="ghost" size="sm" className="h-7 text-xs gap-1 px-2">
-            <RatioIcon className="h-3.5 w-3.5" /> {ASPECT_OPTIONS.find(a => a.value === aspect)?.label}
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-36 p-2" side="top">
-          <p className="text-xs font-medium mb-2 text-muted-foreground">Aspect Ratio</p>
-          {ASPECT_OPTIONS.map(a => (
-            <Button key={a.value} variant={aspect === a.value ? 'default' : 'ghost'} size="sm" className="h-7 text-xs w-full justify-start" onClick={() => setAspect(a.value)}>
-              {a.label}
-            </Button>
-          ))}
-        </PopoverContent>
-      </Popover>
+        {/* Stop */}
+        <button onClick={onStop} className="p-1.5 rounded hover:bg-black/10 transition-colors" title="Stop">
+          <Square className="h-3.5 w-3.5" style={{ color: '#333' }} />
+        </button>
 
-      {/* Volume Boost */}
-      <Popover>
-        <PopoverTrigger asChild>
-          <Button variant={volumeBoost > 100 ? 'default' : 'ghost'} size="sm" className="h-7 text-xs gap-1 px-2">
-            {volumeBoost > 100 ? <Volume2 className="h-3.5 w-3.5" /> : <Volume2 className="h-3.5 w-3.5" />}
-            {volumeBoost}%
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-48 p-3" side="top">
-          <p className="text-xs font-medium mb-2 text-muted-foreground">Volume Boost</p>
-          <Slider min={50} max={300} step={10} value={[volumeBoost]} onValueChange={handleVolumeBoost} />
-          <p className="text-xs text-muted-foreground mt-1 text-center">{volumeBoost}%</p>
-        </PopoverContent>
-      </Popover>
+        {/* Next */}
+        <button onClick={onNext} className="p-1.5 rounded hover:bg-black/10 transition-colors" title="Next">
+          <SkipForward className="h-3.5 w-3.5" style={{ color: '#333' }} />
+        </button>
 
-      {/* Audio Tracks */}
-      {audioTracks.length > 1 && (
+        {/* Fullscreen */}
+        <button onClick={toggleFullscreen} className="p-1.5 rounded hover:bg-black/10 transition-colors" title="Fullscreen (F)">
+          <Maximize className="h-3.5 w-3.5" style={{ color: '#333' }} />
+        </button>
+
+        {/* Playlist / Extended controls separator */}
+        <div className="flex items-center gap-0.5 ml-1 border-l pl-1" style={{ borderColor: '#bbb' }}>
+          {/* A-B Loop */}
+          <button
+            onClick={toggleAbLoop}
+            className="p-1.5 rounded hover:bg-black/10 transition-colors"
+            title="A-B Loop (L)"
+            style={{ color: abLoop.a !== null ? '#ff6600' : '#333' }}
+          >
+            <Repeat className="h-3.5 w-3.5" />
+          </button>
+
+          {/* Shuffle */}
+          <button
+            onClick={() => setIsShuffled(!isShuffled)}
+            className="p-1.5 rounded hover:bg-black/10 transition-colors"
+            title="Shuffle"
+            style={{ color: isShuffled ? '#ff6600' : '#333' }}
+          >
+            <Shuffle className="h-3.5 w-3.5" />
+          </button>
+
+          {/* Screenshot */}
+          <button onClick={takeScreenshot} className="p-1.5 rounded hover:bg-black/10 transition-colors" title="Screenshot (Ctrl+S)">
+            <Camera className="h-3.5 w-3.5" style={{ color: '#333' }} />
+          </button>
+        </div>
+
+        {/* Speed popover */}
         <Popover>
           <PopoverTrigger asChild>
-            <Button variant="ghost" size="sm" className="h-7 text-xs gap-1 px-2">
-              <Languages className="h-3.5 w-3.5" /> Audio
-            </Button>
+            <button className="p-1.5 rounded hover:bg-black/10 transition-colors text-[11px] font-mono ml-1" style={{ color: speed !== 1 ? '#ff6600' : '#333' }}>
+              {speed}x
+            </button>
           </PopoverTrigger>
-          <PopoverContent className="w-48 p-2" side="top">
-            <p className="text-xs font-medium mb-2 text-muted-foreground">Audio Track</p>
-            {audioTracks.map(t => (
-              <Button key={t.id} variant={t.enabled ? 'default' : 'ghost'} size="sm"
-                className="h-7 text-xs w-full justify-start" onClick={() => switchAudioTrack(String(t.id))}>
-                {t.label} ({t.language})
+          <PopoverContent className="w-40 p-2" side="top">
+            <p className="text-xs font-medium mb-2 text-muted-foreground">Speed</p>
+            <div className="grid grid-cols-5 gap-1">
+              {SPEED_OPTIONS.map(s => (
+                <Button key={s} variant={speed === s ? 'default' : 'ghost'} size="sm" className="h-7 text-xs px-1" onClick={() => changeSpeed(s)}>
+                  {s}x
+                </Button>
+              ))}
+            </div>
+          </PopoverContent>
+        </Popover>
+
+        {/* Aspect Ratio */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <button className="p-1.5 rounded hover:bg-black/10 transition-colors" title="Aspect Ratio">
+              <RatioIcon className="h-3.5 w-3.5" style={{ color: '#333' }} />
+            </button>
+          </PopoverTrigger>
+          <PopoverContent className="w-36 p-2" side="top">
+            <p className="text-xs font-medium mb-2 text-muted-foreground">Aspect Ratio</p>
+            {ASPECT_OPTIONS.map(a => (
+              <Button key={a.value} variant={aspect === a.value ? 'default' : 'ghost'} size="sm" className="h-7 text-xs w-full justify-start" onClick={() => setAspect(a.value)}>
+                {a.label}
               </Button>
             ))}
           </PopoverContent>
         </Popover>
-      )}
 
-      {/* Subtitle Size */}
-      <Popover>
-        <PopoverTrigger asChild>
-          <Button variant="ghost" size="sm" className="h-7 text-xs gap-1 px-2">
-            <Type className="h-3.5 w-3.5" /> Sub {subtitleSize}%
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-48 p-3" side="top">
-          <p className="text-xs font-medium mb-2 text-muted-foreground">Subtitle Size</p>
-          <Slider min={50} max={200} step={10} value={[subtitleSize]} onValueChange={v => setSubtitleSize(v[0])} />
-          <div className="flex justify-between mt-1">
-            <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={() => setSubtitleSize(s => Math.max(50, s - 10))}>
-              <ChevronDown className="h-3 w-3" />
-            </Button>
-            <span className="text-xs text-muted-foreground">{subtitleSize}%</span>
-            <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={() => setSubtitleSize(s => Math.min(200, s + 10))}>
-              <ChevronUp className="h-3 w-3" />
-            </Button>
+        {/* Audio tracks */}
+        {audioTracks.length > 1 && (
+          <Popover>
+            <PopoverTrigger asChild>
+              <button className="p-1.5 rounded hover:bg-black/10 transition-colors" title="Audio Track">
+                <Languages className="h-3.5 w-3.5" style={{ color: '#333' }} />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-48 p-2" side="top">
+              <p className="text-xs font-medium mb-2 text-muted-foreground">Audio Track</p>
+              {audioTracks.map(t => (
+                <Button key={t.id} variant={t.enabled ? 'default' : 'ghost'} size="sm" className="h-7 text-xs w-full justify-start" onClick={() => switchAudioTrack(String(t.id))}>
+                  {t.label} ({t.language})
+                </Button>
+              ))}
+            </PopoverContent>
+          </Popover>
+        )}
+
+        {/* Subtitle size */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <button className="p-1.5 rounded hover:bg-black/10 transition-colors" title="Subtitle Size">
+              <Type className="h-3.5 w-3.5" style={{ color: '#333' }} />
+            </button>
+          </PopoverTrigger>
+          <PopoverContent className="w-48 p-3" side="top">
+            <p className="text-xs font-medium mb-2 text-muted-foreground">Subtitle Size</p>
+            <Slider min={50} max={200} step={10} value={[subtitleSize]} onValueChange={v => setSubtitleSize(v[0])} />
+            <p className="text-xs text-muted-foreground mt-1 text-center">{subtitleSize}%</p>
+          </PopoverContent>
+        </Popover>
+
+        {/* Spacer */}
+        <div className="flex-1" />
+
+        {/* Volume - VLC style: icon + horizontal slider + percentage */}
+        <div className="flex items-center gap-1 mr-1">
+          <button onClick={toggleMute} className="p-1 rounded hover:bg-black/10 transition-colors" title="Mute (M)">
+            <VolumeIcon className="h-3.5 w-3.5" style={{ color: '#333' }} />
+          </button>
+          <div className="w-20">
+            <Slider
+              min={0} max={200} step={1}
+              value={[isMuted ? 0 : volume]}
+              onValueChange={(v) => {
+                if (v[0] > 100 && !sourceRef.current) initAudioBoost();
+                if (v[0] > 100) {
+                  if (gainNodeRef.current) gainNodeRef.current.gain.value = v[0] / 100;
+                  setVolumeBoost(v[0]);
+                  handleVolumeChange([100]);
+                } else {
+                  if (gainNodeRef.current) gainNodeRef.current.gain.value = 1;
+                  setVolumeBoost(100);
+                  handleVolumeChange(v);
+                }
+              }}
+            />
           </div>
-        </PopoverContent>
-      </Popover>
-
-      {/* Keyboard shortcuts hint */}
-      <span className="ml-auto text-[10px] text-muted-foreground hidden md:inline">
-        [ ] Speed · L Loop · F Full · J/K Seek/Play · M Mute · ←→ ±5s · ↑↓ Vol
-      </span>
+          <span className="text-[11px] font-mono min-w-[35px] text-right" style={{ color: '#333' }}>
+            {isMuted ? 0 : volumeBoost > 100 ? volumeBoost : volume}%
+          </span>
+        </div>
+      </div>
     </div>
   );
 }
