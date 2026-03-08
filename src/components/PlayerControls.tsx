@@ -320,7 +320,7 @@ export function PlayerControls({ videoRef, onPrev, onNext, onStop }: PlayerContr
             />
             <div
               className="absolute top-0 left-0 h-full rounded-sm"
-              style={{ width: `${progress}%`, background: '#ff6600' }}
+              style={{ width: `${progress}%` }} className="absolute top-0 left-0 h-full rounded-sm bg-primary"
             />
             <div
               className="absolute top-1/2 -translate-y-1/2 h-3 w-3 rounded-full border border-[#999]"
