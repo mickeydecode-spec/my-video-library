@@ -5,19 +5,19 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 
 // Global thumbnail cache and concurrency limiter
-const thumbnailCache = new Map<string, { thumb: string; duration: string }>();
+const thumbnailCache = new Map<string, { thumb: string; duration: number }>();
 let activeDecoders = 0;
-const MAX_CONCURRENT = 3;
+const MAX_CONCURRENT = 6;
 const pendingQueue: (() => void)[] = [];
 
 function runNext() {
-  if (pendingQueue.length > 0 && activeDecoders < MAX_CONCURRENT) {
+  while (pendingQueue.length > 0 && activeDecoders < MAX_CONCURRENT) {
     const next = pendingQueue.shift();
     next?.();
   }
 }
 
-function generateThumbnail(url: string): Promise<{ thumb: string; duration: string }> {
+function generateThumbnail(url: string): Promise<{ thumb: string; duration: number }> {
   const cached = thumbnailCache.get(url);
   if (cached) return Promise.resolve(cached);
 
@@ -27,46 +27,52 @@ function generateThumbnail(url: string): Promise<{ thumb: string; duration: stri
       const el = document.createElement('video');
       el.preload = 'metadata';
       el.src = url;
-      el.currentTime = 2;
       el.muted = true;
 
       const cleanup = () => {
-        el.src = '';
+        el.removeAttribute('src');
+        el.load();
         activeDecoders--;
         runNext();
       };
 
-      el.addEventListener('loadeddata', () => {
-        const mins = Math.floor(el.duration / 60);
-        const secs = Math.floor(el.duration % 60);
-        const duration = `${mins}:${secs.toString().padStart(2, '0')}`;
+      el.addEventListener('loadedmetadata', () => {
+        // Seek to 10% or 2s, whichever is smaller
+        el.currentTime = Math.min(2, el.duration * 0.1);
+      }, { once: true });
 
+      el.addEventListener('seeked', () => {
+        const dur = el.duration;
         const canvas = document.createElement('canvas');
-        canvas.width = 240;
-        canvas.height = 135;
+        canvas.width = 320;
+        canvas.height = 180;
         const ctx = canvas.getContext('2d');
-        let thumb = '';
         if (ctx) {
-          ctx.drawImage(el, 0, 0, 240, 135);
-          thumb = canvas.toDataURL();
+          ctx.drawImage(el, 0, 0, 320, 180);
+          canvas.toBlob((blob) => {
+            const thumb = blob ? URL.createObjectURL(blob) : '';
+            const result = { thumb, duration: dur };
+            thumbnailCache.set(url, result);
+            cleanup();
+            resolve(result);
+          }, 'image/jpeg', 0.6);
+        } else {
+          cleanup();
+          resolve({ thumb: '', duration: dur });
         }
-        const result = { thumb, duration };
-        thumbnailCache.set(url, result);
-        cleanup();
-        resolve(result);
-      });
+      }, { once: true });
 
       el.addEventListener('error', () => {
         cleanup();
-        resolve({ thumb: '', duration: '' });
-      });
+        resolve({ thumb: '', duration: 0 });
+      }, { once: true });
 
       setTimeout(() => {
         if (activeDecoders > 0) {
           cleanup();
-          resolve({ thumb: '', duration: '' });
+          resolve({ thumb: '', duration: 0 });
         }
-      }, 10000);
+      }, 8000);
     };
 
     if (activeDecoders < MAX_CONCURRENT) {
@@ -75,6 +81,16 @@ function generateThumbnail(url: string): Promise<{ thumb: string; duration: stri
       pendingQueue.push(start);
     }
   });
+}
+
+// Export for use by Netflix browser
+export { thumbnailCache, generateThumbnail };
+
+function formatDuration(seconds: number): string {
+  if (!seconds || seconds <= 0) return '';
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return `${m}:${s.toString().padStart(2, '0')}`;
 }
 
 export type CardVariant = 'default' | 'hero' | 'portrait' | 'horizontal' | 'vertical';
@@ -96,7 +112,7 @@ export const VideoCard = memo(function VideoCard({ video, onClick, resumePercent
   });
   const [duration, setDuration] = useState(() => {
     const cached = thumbnailCache.get(video.url);
-    return cached?.duration || '';
+    return cached ? formatDuration(cached.duration) : '';
   });
   const [isVisible, setIsVisible] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -127,7 +143,7 @@ export const VideoCard = memo(function VideoCard({ video, onClick, resumePercent
     generateThumbnail(video.url).then(result => {
       if (!cancelled) {
         setThumbnail(result.thumb);
-        setDuration(result.duration);
+        setDuration(formatDuration(result.duration));
       }
     });
     return () => { cancelled = true; };

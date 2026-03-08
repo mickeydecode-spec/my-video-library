@@ -3,6 +3,7 @@ import { VideoFile } from '@/lib/fileScanner';
 import { WatchHistoryEntry } from '@/hooks/useWatchHistory';
 import { Play, Info, ChevronLeft, ChevronRight, X, Volume2, VolumeX } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { thumbnailCache, generateThumbnail } from '@/components/VideoCard';
 
 interface NetflixBrowserProps {
   videos: VideoFile[];
@@ -143,7 +144,7 @@ function CategoryRow({ title, videos, onPlay, watchHistory, noteCounts, videoTag
           className="flex gap-1.5 overflow-x-auto scrollbar-none scroll-smooth"
         >
           {videos.map(video => (
-            <VideoCard
+            <NetflixVideoCard
               key={video.id}
               video={video}
               onPlay={onPlay}
@@ -160,7 +161,7 @@ function CategoryRow({ title, videos, onPlay, watchHistory, noteCounts, videoTag
   );
 }
 
-function VideoCard({ video, onPlay, watchHistory, noteCounts, videoTags, onHover, isHovered }: {
+function NetflixVideoCard({ video, onPlay, watchHistory, noteCounts, videoTags, onHover, isHovered }: {
   video: VideoFile;
   onPlay: (v: VideoFile) => void;
   watchHistory?: Record<string, WatchHistoryEntry>;
@@ -171,24 +172,50 @@ function VideoCard({ video, onPlay, watchHistory, noteCounts, videoTags, onHover
 }) {
   const previewRef = useRef<HTMLVideoElement>(null);
   const hoverTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const cardRef = useRef<HTMLDivElement>(null);
   const entry = watchHistory?.[video.path];
   const resumePct = entry && entry.duration > 0 ? (entry.position / entry.duration) * 100 : 0;
   const tags = videoTags?.[video.path];
   const noteCount = noteCounts?.[video.path] || 0;
 
+  // Thumbnail from shared cache
+  const [thumb, setThumb] = useState<string>(() => thumbnailCache.get(video.url)?.thumb || '');
+  const [shouldLoadPreview, setShouldLoadPreview] = useState(false);
+
+  // Lazy-load thumbnail via IntersectionObserver
+  useEffect(() => {
+    if (thumb) return;
+    const el = cardRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) {
+        generateThumbnail(video.url).then(r => setThumb(r.thumb));
+        obs.disconnect();
+      }
+    }, { rootMargin: '300px' });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [video.url, thumb]);
+
   const handleMouseEnter = () => {
     onHover(video.id);
     hoverTimerRef.current = setTimeout(() => {
-      previewRef.current?.play().catch(() => {});
-    }, 500);
+      setShouldLoadPreview(true);
+      // Wait a tick for the video element to mount, then play
+      requestAnimationFrame(() => {
+        previewRef.current?.play().catch(() => {});
+      });
+    }, 600);
   };
 
   const handleMouseLeave = () => {
     onHover(null);
     clearTimeout(hoverTimerRef.current);
+    setShouldLoadPreview(false);
     if (previewRef.current) {
       previewRef.current.pause();
-      previewRef.current.currentTime = 0;
+      previewRef.current.removeAttribute('src');
+      previewRef.current.load();
     }
   };
 
@@ -198,6 +225,7 @@ function VideoCard({ video, onPlay, watchHistory, noteCounts, videoTags, onHover
 
   return (
     <div
+      ref={cardRef}
       className="shrink-0 w-[230px] cursor-pointer transition-all duration-300 ease-in-out relative group"
       style={{
         transform: isHovered ? 'scale(1.3)' : 'scale(1)',
@@ -208,19 +236,30 @@ function VideoCard({ video, onPlay, watchHistory, noteCounts, videoTags, onHover
       onClick={() => onPlay(video)}
     >
       <div className="relative aspect-video bg-[#2a2a2a] rounded overflow-hidden">
-        {/* Preview video (hidden until hovered) */}
-        <video
-          ref={previewRef}
-          src={video.url}
-          muted
-          loop
-          playsInline
-          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${isHovered ? 'opacity-100' : 'opacity-0'}`}
-        />
-        {/* Placeholder */}
-        <div className={`absolute inset-0 w-full h-full flex items-center justify-center bg-[#2a2a2a] transition-opacity duration-300 ${isHovered ? 'opacity-0' : 'opacity-100'}`}>
-          <Play className="h-8 w-8 text-white/30" />
-        </div>
+        {/* Preview video - only rendered on hover */}
+        {isHovered && shouldLoadPreview && (
+          <video
+            ref={previewRef}
+            src={video.url}
+            muted
+            loop
+            playsInline
+            preload="auto"
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+        )}
+        {/* Thumbnail or placeholder */}
+        {thumb ? (
+          <img
+            src={thumb}
+            alt={video.name}
+            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${isHovered && shouldLoadPreview ? 'opacity-0' : 'opacity-100'}`}
+          />
+        ) : (
+          <div className="absolute inset-0 w-full h-full flex items-center justify-center bg-[#2a2a2a]">
+            <Play className="h-8 w-8 text-white/20" />
+          </div>
+        )}
         {/* Resume bar */}
         {resumePct > 0 && resumePct < 95 && (
           <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-white/20">
