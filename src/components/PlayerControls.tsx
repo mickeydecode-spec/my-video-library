@@ -243,6 +243,28 @@ export function PlayerControls({ videoRef, onPrev, onNext, onStop }: PlayerContr
 
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
 
+  // Buffered range tracking
+  useEffect(() => {
+    const el = videoRef.current;
+    if (!el) return;
+    const updateBuffered = () => {
+      if (el.buffered.length > 0 && el.duration > 0) {
+        setBuffered((el.buffered.end(el.buffered.length - 1) / el.duration) * 100);
+      }
+    };
+    el.addEventListener('progress', updateBuffered);
+    return () => el.removeEventListener('progress', updateBuffered);
+  }, [videoRef]);
+
+  const handleSeekbarHover = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const bar = seekbarRef.current;
+    if (!bar || !duration) return;
+    const rect = bar.getBoundingClientRect();
+    const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    setHoverTime(ratio * duration);
+    setHoverPos(ratio * 100);
+  }, [duration]);
+
   const VolumeIcon = isMuted || volume === 0 ? VolumeX : volume < 30 ? Volume : volume < 70 ? Volume1 : Volume2;
 
   // Keyboard shortcuts
