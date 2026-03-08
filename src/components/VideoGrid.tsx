@@ -109,9 +109,7 @@ function EmptyGrid() {
 
 export function VideoGrid({ videos, onPlay, watchHistory = {}, noteCounts = {}, videoTags = {}, layout = 'grid', webLayout = 'youtube' }: VideoGridProps) {
   // Web layout takes priority
-  if (webLayout === 'netflix') {
-    return <NetflixLayout videos={videos} onPlay={onPlay} watchHistory={watchHistory} noteCounts={noteCounts} videoTags={videoTags} />;
-  }
+  // Netflix handled by NetflixBrowser in Index.tsx
   if (webLayout === 'twitch') {
     return <TwitchLayout videos={videos} onPlay={onPlay} watchHistory={watchHistory} noteCounts={noteCounts} videoTags={videoTags} />;
   }

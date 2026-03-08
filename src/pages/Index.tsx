@@ -194,6 +194,32 @@ const Index = () => {
     );
   }
 
+  // Netflix immersive mode
+  if (webLayout === 'netflix') {
+    if (currentVideo) {
+      return (
+        <NetflixPlayer
+          video={currentVideo}
+          onBack={() => setCurrentVideo(null)}
+          onNext={playNext}
+          onPrev={playPrev}
+          resumePosition={getEntry(currentVideo.path)?.position}
+          onPositionUpdate={(pos, dur) => updatePosition(currentVideo.path, pos, dur)}
+        />
+      );
+    }
+    return (
+      <NetflixBrowser
+        videos={processedVideos}
+        onPlay={playVideo}
+        onExit={() => setWebLayout('youtube')}
+        watchHistory={history}
+        noteCounts={noteCounts}
+        videoTags={videoTagsMap}
+      />
+    );
+  }
+
   return (
     <div className="flex h-screen flex-col bg-background">
       <Header
