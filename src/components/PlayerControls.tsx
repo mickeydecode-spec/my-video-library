@@ -381,7 +381,7 @@ export function PlayerControls({ videoRef, onPrev, onNext, onStop }: PlayerContr
             onClick={toggleAbLoop}
             className="p-1.5 rounded hover:bg-white/10 transition-colors"
             title="A-B Loop (L)"
-            style={{ color: abLoop.a !== null ? '#ff6600' : '#333' }}
+            style={{ color: abLoop.a !== null ? 'hsl(var(--primary))' : 'rgba(255,255,255,0.8)' }}
           >
             <Repeat className="h-3.5 w-3.5" />
           </button>
