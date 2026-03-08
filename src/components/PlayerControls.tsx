@@ -442,8 +442,8 @@ export function PlayerControls({ videoRef, onPrev, onNext, onStop }: PlayerContr
         {audioTracks.length > 1 && (
           <Popover>
             <PopoverTrigger asChild>
-              <button className="p-1.5 rounded hover:bg-black/10 transition-colors" title="Audio Track">
-                <Languages className="h-3.5 w-3.5" style={{ color: '#333' }} />
+              <button className="p-1.5 rounded hover:bg-white/10 transition-colors" title="Audio Track">
+                <Languages className="h-3.5 w-3.5 text-white/80" />
               </button>
             </PopoverTrigger>
             <PopoverContent className="w-48 p-2" side="top">
