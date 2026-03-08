@@ -188,9 +188,9 @@ export function VideoPlayer({
           pointerEvents: controlsVisible ? 'auto' : 'none',
         }}
       >
-        <Menubar className="rounded-none border-0 border-b px-1 h-7" style={{ background: '#e8e8e8', borderColor: '#c8c8c8' }}>
+      <Menubar className="rounded-none border-0 border-b px-1 h-7 bg-black/90 border-white/10">
           <MenubarMenu>
-            <MenubarTrigger className="text-xs px-2 py-0.5 h-6 font-normal" style={{ color: '#333' }}>Media</MenubarTrigger>
+            <MenubarTrigger className="text-xs px-2 py-0.5 h-6 font-normal text-white/80 hover:text-white">Media</MenubarTrigger>
             <MenubarContent>
               <MenubarItem onClick={onClose}>Close <MenubarShortcut>Ctrl+W</MenubarShortcut></MenubarItem>
               <MenubarSeparator />
