@@ -497,7 +497,7 @@ export function PlayerControls({ videoRef, onPrev, onNext, onStop }: PlayerContr
               }}
             />
           </div>
-          <span className="text-[11px] font-mono min-w-[35px] text-right" style={{ color: '#333' }}>
+          <span className="text-[11px] font-mono min-w-[35px] text-right text-white/70">
             {isMuted ? 0 : volumeBoost > 100 ? volumeBoost : volume}%
           </span>
         </div>
