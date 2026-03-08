@@ -266,11 +266,11 @@ export function VideoPlayer({
           </MenubarMenu>
 
           <div className="flex-1" />
-          <button onClick={() => setNotesOpen(!notesOpen)} className="p-1 rounded hover:bg-black/10 transition-colors mr-1" title="Notes & Bookmarks">
-            <Bookmark className="h-3.5 w-3.5" style={{ color: '#555' }} />
+          <button onClick={() => setNotesOpen(!notesOpen)} className="p-1 rounded hover:bg-white/10 transition-colors mr-1" title="Notes & Bookmarks">
+            <Bookmark className="h-3.5 w-3.5 text-white/60" />
           </button>
-          <button onClick={onClose} className="p-1 rounded hover:bg-black/10 transition-colors" title="Close">
-            <X className="h-3.5 w-3.5" style={{ color: '#555' }} />
+          <button onClick={onClose} className="p-1 rounded hover:bg-white/10 transition-colors" title="Close">
+            <X className="h-3.5 w-3.5 text-white/60" />
           </button>
         </Menubar>
       </div>
