@@ -355,8 +355,8 @@ export function PlayerControls({ videoRef, onPrev, onNext, onStop }: PlayerContr
         </button>
 
         {/* Previous */}
-        <button onClick={onPrev} className="p-1.5 rounded hover:bg-black/10 transition-colors" title="Previous">
-          <SkipBack className="h-3.5 w-3.5" style={{ color: '#333' }} />
+        <button onClick={onPrev} className="p-1.5 rounded hover:bg-white/10 transition-colors" title="Previous">
+          <SkipBack className="h-3.5 w-3.5 text-white/80" />
         </button>
 
         {/* Stop */}
