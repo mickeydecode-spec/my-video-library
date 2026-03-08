@@ -1,57 +1,152 @@
 import { VideoFile } from '@/lib/fileScanner';
 import { Bookmark, Play, Subtitles } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, memo } from 'react';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+
+// Global thumbnail cache and concurrency limiter
+const thumbnailCache = new Map<string, { thumb: string; duration: string }>();
+let activeDecoders = 0;
+const MAX_CONCURRENT = 3;
+const pendingQueue: (() => void)[] = [];
+
+function runNext() {
+  if (pendingQueue.length > 0 && activeDecoders < MAX_CONCURRENT) {
+    const next = pendingQueue.shift();
+    next?.();
+  }
+}
+
+function generateThumbnail(url: string): Promise<{ thumb: string; duration: string }> {
+  const cached = thumbnailCache.get(url);
+  if (cached) return Promise.resolve(cached);
+
+  return new Promise((resolve) => {
+    const start = () => {
+      activeDecoders++;
+      const el = document.createElement('video');
+      el.preload = 'metadata';
+      el.src = url;
+      el.currentTime = 2;
+      el.muted = true;
+
+      const cleanup = () => {
+        el.src = '';
+        activeDecoders--;
+        runNext();
+      };
+
+      el.addEventListener('loadeddata', () => {
+        const mins = Math.floor(el.duration / 60);
+        const secs = Math.floor(el.duration % 60);
+        const duration = `${mins}:${secs.toString().padStart(2, '0')}`;
+
+        const canvas = document.createElement('canvas');
+        canvas.width = 320;
+        canvas.height = 180;
+        const ctx = canvas.getContext('2d');
+        let thumb = '';
+        if (ctx) {
+          ctx.drawImage(el, 0, 0, 320, 180);
+          thumb = canvas.toDataURL();
+        }
+        const result = { thumb, duration };
+        thumbnailCache.set(url, result);
+        cleanup();
+        resolve(result);
+      });
+
+      el.addEventListener('error', () => {
+        cleanup();
+        resolve({ thumb: '', duration: '' });
+      });
+
+      // Timeout fallback
+      setTimeout(() => {
+        if (activeDecoders > 0) {
+          cleanup();
+          resolve({ thumb: '', duration: '' });
+        }
+      }, 10000);
+    };
+
+    if (activeDecoders < MAX_CONCURRENT) {
+      start();
+    } else {
+      pendingQueue.push(start);
+    }
+  });
+}
 
 interface VideoCardProps {
   video: VideoFile;
   onClick: () => void;
-  resumePercent?: number; // 0-100
-  resumeTime?: string; // formatted time string
+  resumePercent?: number;
+  resumeTime?: string;
   noteCount?: number;
   tags?: string[];
 }
 
-export function VideoCard({ video, onClick, resumePercent, resumeTime, noteCount, tags }: VideoCardProps) {
-  const [thumbnail, setThumbnail] = useState<string | null>(null);
-  const [duration, setDuration] = useState('');
+export const VideoCard = memo(function VideoCard({ video, onClick, resumePercent, resumeTime, noteCount, tags }: VideoCardProps) {
+  const [thumbnail, setThumbnail] = useState<string | null>(() => {
+    const cached = thumbnailCache.get(video.url);
+    return cached?.thumb || null;
+  });
+  const [duration, setDuration] = useState(() => {
+    const cached = thumbnailCache.get(video.url);
+    return cached?.duration || '';
+  });
+  const [isVisible, setIsVisible] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
 
+  // Intersection observer for lazy loading
   useEffect(() => {
-    const el = document.createElement('video');
-    el.preload = 'metadata';
-    el.src = video.url;
-    el.currentTime = 2;
-    el.muted = true;
-
-    el.addEventListener('loadeddata', () => {
-      const mins = Math.floor(el.duration / 60);
-      const secs = Math.floor(el.duration % 60);
-      setDuration(`${mins}:${secs.toString().padStart(2, '0')}`);
-
-      const canvas = document.createElement('canvas');
-      canvas.width = 320;
-      canvas.height = 180;
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.drawImage(el, 0, 0, 320, 180);
-        setThumbnail(canvas.toDataURL());
-      }
-      el.src = '';
-    });
-
-    return () => { el.src = ''; };
+    const el = cardRef.current;
+    if (!el) return;
+    // If already cached, skip observer
+    if (thumbnailCache.has(video.url)) {
+      setIsVisible(true);
+      return;
+    }
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: '200px' }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
   }, [video.url]);
+
+  // Generate thumbnail only when visible
+  useEffect(() => {
+    if (!isVisible || thumbnail) return;
+    let cancelled = false;
+    generateThumbnail(video.url).then(result => {
+      if (!cancelled) {
+        setThumbnail(result.thumb);
+        setDuration(result.duration);
+      }
+    });
+    return () => { cancelled = true; };
+  }, [isVisible, video.url, thumbnail]);
 
   const folderName = video.folder.split('/').pop() || '';
 
   return (
     <div
+      ref={cardRef}
       onClick={onClick}
       className="group cursor-pointer rounded-xl overflow-hidden transition-transform hover:scale-[1.02]"
     >
       <div className="relative aspect-video bg-surface rounded-xl overflow-hidden">
         {thumbnail ? (
           <img src={thumbnail} alt={video.name} className="w-full h-full object-cover" />
+        ) : isVisible ? (
+          <Skeleton className="w-full h-full" />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
             <Play className="h-10 w-10 text-muted-foreground" />
@@ -77,13 +172,9 @@ export function VideoCard({ video, onClick, resumePercent, resumeTime, noteCount
             <Bookmark className="h-3 w-3" /> {noteCount}
           </span>
         )}
-        {/* Resume progress bar */}
         {resumePercent != null && resumePercent > 0 && resumePercent < 95 && (
           <div className="absolute bottom-0 left-0 right-0 h-1 bg-muted/50">
-            <div
-              className="h-full bg-primary"
-              style={{ width: `${resumePercent}%` }}
-            />
+            <div className="h-full bg-primary" style={{ width: `${resumePercent}%` }} />
           </div>
         )}
       </div>
@@ -113,4 +204,4 @@ export function VideoCard({ video, onClick, resumePercent, resumeTime, noteCount
       </div>
     </div>
   );
-}
+});
