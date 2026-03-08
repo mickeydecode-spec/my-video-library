@@ -35,27 +35,6 @@ export function Sidebar({
     >
       <ScrollArea className="h-full">
         <div className="p-2 space-y-1">
-          {/* View Mode */}
-          <div className="pb-1 px-1">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2 px-2 py-1">
-              View
-            </p>
-            <div className="flex gap-1">
-              {layoutOptions.map(({ mode, icon: Icon, label }) => (
-                <Button
-                  key={mode}
-                  variant={layout === mode ? 'secondary' : 'ghost'}
-                  size="sm"
-                  className="flex-1 h-8 text-xs gap-1.5"
-                  onClick={() => onLayoutChange(mode)}
-                >
-                  <Icon className="h-3.5 w-3.5" />
-                  {label}
-                </Button>
-              ))}
-            </div>
-          </div>
-
           {/* All Videos */}
           <button
             onClick={() => { onSelectPlaylist(null); onSelectSmartPlaylist(null); }}
