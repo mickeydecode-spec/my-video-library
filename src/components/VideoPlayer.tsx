@@ -237,7 +237,7 @@ export function VideoPlayer({
             </MenubarContent>
           </MenubarMenu>
           <MenubarMenu>
-            <MenubarTrigger className="text-xs px-2 py-0.5 h-6 font-normal" style={{ color: '#333' }}>Subtitle</MenubarTrigger>
+            <MenubarTrigger className="text-xs px-2 py-0.5 h-6 font-normal text-white/80 hover:text-white">Subtitle</MenubarTrigger>
             <MenubarContent>
               {video.subtitleFiles.length > 0
                 ? video.subtitleFiles.map((s, i) => (
