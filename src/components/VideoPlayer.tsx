@@ -310,9 +310,9 @@ export function VideoPlayer({
               onNext={onNext}
               onStop={handleStop}
             />
-            <div className="px-2 py-1" style={{ background: '#e0e0e0', borderTop: '1px solid #c8c8c8' }}>
+            <div className="px-2 py-1 bg-black/90 border-t border-white/10">
               <div className="flex items-center gap-2">
-                <span className="text-[11px] font-medium truncate" style={{ color: '#333' }}>{video.name}</span>
+                <span className="text-[11px] font-medium truncate text-white/80">{video.name}</span>
                 <div className="flex-1" />
                 <TagEditor tags={tags} allTags={allTags} onAddTag={onAddTag} onRemoveTag={onRemoveTag} />
               </div>
