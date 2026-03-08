@@ -405,7 +405,7 @@ export function PlayerControls({ videoRef, onPrev, onNext, onStop }: PlayerContr
         {/* Speed popover */}
         <Popover>
           <PopoverTrigger asChild>
-            <button className="p-1.5 rounded hover:bg-black/10 transition-colors text-[11px] font-mono ml-1" style={{ color: speed !== 1 ? '#ff6600' : '#333' }}>
+            <button className="p-1.5 rounded hover:bg-white/10 transition-colors text-[11px] font-mono ml-1" style={{ color: speed !== 1 ? 'hsl(var(--primary))' : 'rgba(255,255,255,0.8)' }}>
               {speed}x
             </button>
           </PopoverTrigger>
