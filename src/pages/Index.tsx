@@ -19,6 +19,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { TikTokFeed } from '@/components/TikTokFeed';
+import { NetflixBrowser } from '@/components/NetflixBrowser';
+import { NetflixPlayer } from '@/components/NetflixPlayer';
 
 const Index = () => {
   const {
@@ -187,6 +189,32 @@ const Index = () => {
       <TikTokFeed
         videos={processedVideos}
         onExit={() => setWebLayout('youtube')}
+        videoTags={videoTagsMap}
+      />
+    );
+  }
+
+  // Netflix immersive mode
+  if (webLayout === 'netflix') {
+    if (currentVideo) {
+      return (
+        <NetflixPlayer
+          video={currentVideo}
+          onBack={() => setCurrentVideo(null)}
+          onNext={playNext}
+          onPrev={playPrev}
+          resumePosition={getEntry(currentVideo.path)?.position}
+          onPositionUpdate={(pos, dur) => updatePosition(currentVideo.path, pos, dur)}
+        />
+      );
+    }
+    return (
+      <NetflixBrowser
+        videos={processedVideos}
+        onPlay={playVideo}
+        onExit={() => setWebLayout('youtube')}
+        watchHistory={history}
+        noteCounts={noteCounts}
         videoTags={videoTagsMap}
       />
     );
