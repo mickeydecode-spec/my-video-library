@@ -181,6 +181,17 @@ const Index = () => {
   // Sidebar visibility based on web layout
   const effectiveSidebarOpen = config.showSidebar ? sidebarOpen : false;
 
+  // TikTok immersive mode
+  if (webLayout === 'tiktok' && allVideos.length > 0) {
+    return (
+      <TikTokFeed
+        videos={processedVideos}
+        onExit={() => setWebLayout('youtube')}
+        videoTags={videoTagsMap}
+      />
+    );
+  }
+
   return (
     <div className="flex h-screen flex-col bg-background">
       <Header
