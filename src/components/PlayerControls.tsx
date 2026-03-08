@@ -308,7 +308,7 @@ export function PlayerControls({ videoRef, onPrev, onNext, onStop }: PlayerContr
           <div
             ref={seekbarRef}
             className="flex-1 h-[6px] rounded-sm cursor-pointer relative group/seek bg-white/20"
-            style={{ background: '#c0c0c0' }}
+            onClick={handleSeekbarClick}
             onClick={handleSeekbarClick}
             onMouseMove={handleSeekbarHover}
             onMouseLeave={() => setHoverTime(null)}
