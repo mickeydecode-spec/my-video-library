@@ -144,7 +144,7 @@ function CategoryRow({ title, videos, onPlay, watchHistory, noteCounts, videoTag
           className="flex gap-1.5 overflow-x-auto scrollbar-none scroll-smooth"
         >
           {videos.map(video => (
-            <VideoCard
+            <NetflixVideoCard
               key={video.id}
               video={video}
               onPlay={onPlay}
