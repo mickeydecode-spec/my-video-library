@@ -227,7 +227,7 @@ function NetflixVideoCard({ video, onPlay, watchHistory, noteCounts, videoTags, 
   return (
     <div
       ref={cardRef}
-      className="shrink-0 w-[230px] cursor-pointer transition-all duration-300 ease-in-out relative group"
+      className="shrink-0 w-[300px] cursor-pointer transition-all duration-300 ease-in-out relative group"
       style={{
         transform: isHovered ? 'scale(1.3)' : 'scale(1)',
         zIndex: isHovered ? 30 : 1,
