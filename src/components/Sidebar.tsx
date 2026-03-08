@@ -1,11 +1,10 @@
-import { Clock, Folder, FolderOpen, Grid3X3, Home, LayoutList, List, Rows3, Sparkles, Tag, Trash2 } from 'lucide-react';
+import { Clock, Folder, FolderOpen, Home, List, Sparkles, Tag, Trash2 } from 'lucide-react';
 import { Playlist } from '@/lib/fileScanner';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { WatchHistoryEntry } from '@/hooks/useWatchHistory';
 import { SmartPlaylist } from '@/hooks/useTagManager';
 import { Button } from '@/components/ui/button';
-import { LayoutMode } from '@/hooks/useLayoutPreference';
 
 interface SidebarProps {
   playlists: Playlist[];
@@ -20,15 +19,7 @@ interface SidebarProps {
   activeSmartPlaylist: string | null;
   onSelectSmartPlaylist: (id: string | null) => void;
   onRemoveSmartPlaylist: (id: string) => void;
-  layout: LayoutMode;
-  onLayoutChange: (mode: LayoutMode) => void;
 }
-
-const layoutOptions: { mode: LayoutMode; icon: typeof Grid3X3; label: string }[] = [
-  { mode: 'grid', icon: Grid3X3, label: 'Grid' },
-  { mode: 'list', icon: LayoutList, label: 'List' },
-  { mode: 'compact', icon: Rows3, label: 'Compact' },
-];
 
 export function Sidebar({
   playlists, activePlaylist, onSelectPlaylist, isOpen, totalVideos,
