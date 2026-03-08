@@ -21,6 +21,10 @@ import { useToast } from '@/hooks/use-toast';
 import { TikTokFeed } from '@/components/TikTokFeed';
 import { NetflixBrowser } from '@/components/NetflixBrowser';
 import { NetflixPlayer } from '@/components/NetflixPlayer';
+import { TwitchBrowser } from '@/components/TwitchBrowser';
+import { TwitchPlayer } from '@/components/TwitchPlayer';
+import { PlexBrowser } from '@/components/PlexBrowser';
+import { PlexPlayer } from '@/components/PlexPlayer';
 
 const Index = () => {
   const {
@@ -210,6 +214,58 @@ const Index = () => {
     }
     return (
       <NetflixBrowser
+        videos={processedVideos}
+        onPlay={playVideo}
+        onExit={() => setWebLayout('youtube')}
+        watchHistory={history}
+        noteCounts={noteCounts}
+        videoTags={videoTagsMap}
+      />
+    );
+  }
+
+  // Twitch immersive mode
+  if (webLayout === 'twitch') {
+    if (currentVideo) {
+      return (
+        <TwitchPlayer
+          video={currentVideo}
+          onBack={() => setCurrentVideo(null)}
+          onNext={playNext}
+          onPrev={playPrev}
+          resumePosition={getEntry(currentVideo.path)?.position}
+          onPositionUpdate={(pos, dur) => updatePosition(currentVideo.path, pos, dur)}
+        />
+      );
+    }
+    return (
+      <TwitchBrowser
+        videos={processedVideos}
+        onPlay={playVideo}
+        onExit={() => setWebLayout('youtube')}
+        watchHistory={history}
+        noteCounts={noteCounts}
+        videoTags={videoTagsMap}
+      />
+    );
+  }
+
+  // Plex immersive mode
+  if (webLayout === 'plex') {
+    if (currentVideo) {
+      return (
+        <PlexPlayer
+          video={currentVideo}
+          onBack={() => setCurrentVideo(null)}
+          onNext={playNext}
+          onPrev={playPrev}
+          resumePosition={getEntry(currentVideo.path)?.position}
+          onPositionUpdate={(pos, dur) => updatePosition(currentVideo.path, pos, dur)}
+        />
+      );
+    }
+    return (
+      <PlexBrowser
         videos={processedVideos}
         onPlay={playVideo}
         onExit={() => setWebLayout('youtube')}

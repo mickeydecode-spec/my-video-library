@@ -33,71 +33,7 @@ function getResumeInfo(video: VideoFile, watchHistory: Record<string, WatchHisto
 
 // Netflix is now handled by NetflixBrowser component in Index.tsx
 
-// Twitch: large hero + compact grid
-function TwitchLayout({ videos, onPlay, watchHistory, noteCounts, videoTags }: Omit<VideoGridProps, 'layout' | 'webLayout'>) {
-  if (videos.length === 0) return <EmptyGrid />;
-
-  const heroVideo = videos[0];
-  const rest = videos.slice(1);
-  const { resumePercent: heroPct, resumeTime: heroTime } = getResumeInfo(heroVideo, watchHistory || {});
-
-  return (
-    <div className="flex flex-col gap-4 p-4">
-      <VideoCard
-        video={heroVideo}
-        onClick={() => onPlay(heroVideo)}
-        resumePercent={heroPct}
-        resumeTime={heroTime}
-        noteCount={noteCounts?.[heroVideo.path]}
-        tags={videoTags?.[heroVideo.path]}
-        variant="hero"
-      />
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-        {rest.map(video => {
-          const { resumePercent, resumeTime } = getResumeInfo(video, watchHistory || {});
-          return (
-            <VideoCard
-              key={video.id}
-              video={video}
-              onClick={() => onPlay(video)}
-              resumePercent={resumePercent}
-              resumeTime={resumeTime}
-              noteCount={noteCounts?.[video.path]}
-              tags={videoTags?.[video.path]}
-            />
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-// Plex: portrait poster cards
-function PlexLayout({ videos, onPlay, watchHistory, noteCounts, videoTags }: Omit<VideoGridProps, 'layout' | 'webLayout'>) {
-  if (videos.length === 0) return <EmptyGrid />;
-
-  return (
-    <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 gap-3 p-4">
-      {videos.map(video => {
-        const { resumePercent, resumeTime } = getResumeInfo(video, watchHistory || {});
-        return (
-          <VideoCard
-            key={video.id}
-            video={video}
-            onClick={() => onPlay(video)}
-            resumePercent={resumePercent}
-            resumeTime={resumeTime}
-            noteCount={noteCounts?.[video.path]}
-            tags={videoTags?.[video.path]}
-            variant="portrait"
-          />
-        );
-      })}
-    </div>
-  );
-}
-
-// TikTok is now handled by TikTokFeed component in Index.tsx
+// Twitch, Plex, TikTok are now handled by dedicated components in Index.tsx
 
 function EmptyGrid() {
   return (
@@ -108,18 +44,7 @@ function EmptyGrid() {
 }
 
 export function VideoGrid({ videos, onPlay, watchHistory = {}, noteCounts = {}, videoTags = {}, layout = 'grid', webLayout = 'youtube' }: VideoGridProps) {
-  // Web layout takes priority
-  // Netflix handled by NetflixBrowser in Index.tsx
-  if (webLayout === 'twitch') {
-    return <TwitchLayout videos={videos} onPlay={onPlay} watchHistory={watchHistory} noteCounts={noteCounts} videoTags={videoTags} />;
-  }
-  if (webLayout === 'plex') {
-    return <PlexLayout videos={videos} onPlay={onPlay} watchHistory={watchHistory} noteCounts={noteCounts} videoTags={videoTags} />;
-  }
-  // TikTok handled by TikTokFeed in Index.tsx — fallback to default grid
-  if (webLayout === 'tiktok') {
-    // Should not reach here, but just in case
-  }
+  // Netflix, Twitch, Plex, TikTok are handled by dedicated components in Index.tsx
 
   if (videos.length === 0) return <EmptyGrid />;
 
