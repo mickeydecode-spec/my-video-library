@@ -25,7 +25,6 @@ export function Sidebar({
   playlists, activePlaylist, onSelectPlaylist, isOpen, totalVideos,
   recentlyWatched, onShowHistory, showingHistory,
   smartPlaylists, activeSmartPlaylist, onSelectSmartPlaylist, onRemoveSmartPlaylist,
-  layout, onLayoutChange,
 }: SidebarProps) {
   return (
     <aside
