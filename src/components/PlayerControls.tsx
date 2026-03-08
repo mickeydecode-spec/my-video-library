@@ -375,7 +375,7 @@ export function PlayerControls({ videoRef, onPrev, onNext, onStop }: PlayerContr
         </button>
 
         {/* Playlist / Extended controls separator */}
-        <div className="flex items-center gap-0.5 ml-1 border-l pl-1" style={{ borderColor: '#bbb' }}>
+        <div className="flex items-center gap-0.5 ml-1 border-l pl-1 border-white/20">
           {/* A-B Loop */}
           <button
             onClick={toggleAbLoop}
