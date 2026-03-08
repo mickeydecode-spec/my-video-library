@@ -19,6 +19,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { TikTokFeed } from '@/components/TikTokFeed';
+import { NetflixBrowser } from '@/components/NetflixBrowser';
+import { NetflixPlayer } from '@/components/NetflixPlayer';
 
 const Index = () => {
   const {
