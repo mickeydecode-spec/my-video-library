@@ -389,7 +389,7 @@ export function PlayerControls({ videoRef, onPrev, onNext, onStop }: PlayerContr
           {/* Shuffle */}
           <button
             onClick={() => setIsShuffled(!isShuffled)}
-            className="p-1.5 rounded hover:bg-black/10 transition-colors"
+            className="p-1.5 rounded hover:bg-white/10 transition-colors"
             title="Shuffle"
             style={{ color: isShuffled ? '#ff6600' : '#333' }}
           >
