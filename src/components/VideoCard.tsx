@@ -112,7 +112,7 @@ export const VideoCard = memo(function VideoCard({ video, onClick, resumePercent
   });
   const [duration, setDuration] = useState(() => {
     const cached = thumbnailCache.get(video.url);
-    return cached?.duration || '';
+    return cached ? formatDuration(cached.duration) : '';
   });
   const [isVisible, setIsVisible] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
