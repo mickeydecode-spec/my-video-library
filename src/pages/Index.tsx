@@ -209,8 +209,6 @@ const Index = () => {
           activeSmartPlaylist={activeSmartPlaylist}
           onSelectSmartPlaylist={handleSelectSmartPlaylist}
           onRemoveSmartPlaylist={removeSmartPlaylist}
-          layout={layout}
-          onLayoutChange={setLayout}
         />
 
         <main className="flex-1 overflow-hidden flex flex-col">
