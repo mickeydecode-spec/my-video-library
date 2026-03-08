@@ -316,7 +316,7 @@ export function PlayerControls({ videoRef, onPrev, onNext, onStop }: PlayerContr
             {/* Buffered range */}
             <div
               className="absolute top-0 left-0 h-full rounded-sm"
-              style={{ width: `${buffered}%`, background: '#a0a0a0' }}
+              style={{ width: `${buffered}%`, background: 'rgba(255,255,255,0.15)' }}
             />
             <div
               className="absolute top-0 left-0 h-full rounded-sm"
