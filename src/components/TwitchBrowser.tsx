@@ -19,7 +19,6 @@ function formatTime(seconds: number): string {
   return `${m}:${s.toString().padStart(2, '0')}`;
 }
 
-// Fake viewer count from video size
 function fakeViewers(video: VideoFile): string {
   const n = ((video.size || 1000) % 9000) + 100;
   return n > 1000 ? `${(n / 1000).toFixed(1)}K` : `${n}`;
@@ -46,7 +45,7 @@ function TwitchHero({ video, onPlay, watchHistory, muted, onToggleMute }: {
   }, [video]);
 
   return (
-    <div className="relative w-full h-[50vh] overflow-hidden">
+    <div className="relative w-full h-[35vh] sm:h-[45vh] md:h-[50vh] overflow-hidden">
       <video
         ref={videoRef}
         src={video.url}
@@ -58,46 +57,45 @@ function TwitchHero({ video, onPlay, watchHistory, muted, onToggleMute }: {
       <div className="absolute inset-0 bg-gradient-to-t from-[#0e0e10] via-transparent to-transparent" />
       <div className="absolute inset-0 bg-gradient-to-r from-[#0e0e10]/70 via-transparent to-transparent" />
 
-      <div className="absolute bottom-8 left-16 max-w-lg z-10">
-        <div className="flex items-center gap-2 mb-2">
-          <span className="flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold text-white" style={{ backgroundColor: '#eb0400' }}>
-            <Radio className="h-3 w-3" /> LIVE
+      <div className="absolute bottom-4 sm:bottom-6 md:bottom-8 left-4 sm:left-8 md:left-16 max-w-[85%] sm:max-w-lg z-10">
+        <div className="flex items-center gap-2 mb-1 sm:mb-2">
+          <span className="flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded text-[10px] sm:text-xs font-bold text-white" style={{ backgroundColor: '#eb0400' }}>
+            <Radio className="h-2.5 w-2.5 sm:h-3 sm:w-3" /> LIVE
           </span>
-          <span className="flex items-center gap-1 text-white/60 text-xs">
-            <Eye className="h-3 w-3" /> {fakeViewers(video)} viewers
+          <span className="flex items-center gap-1 text-white/60 text-[10px] sm:text-xs">
+            <Eye className="h-2.5 w-2.5 sm:h-3 sm:w-3" /> {fakeViewers(video)} viewers
           </span>
         </div>
-        <h1 className="text-3xl font-bold text-white mb-1 drop-shadow-lg">
+        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-0.5 sm:mb-1 drop-shadow-lg line-clamp-2">
           {video.name.replace(/\.[^/.]+$/, '')}
         </h1>
-        <p className="text-sm text-white/50 mb-3">{video.folder.split('/').pop()}</p>
+        <p className="text-xs sm:text-sm text-white/50 mb-2 sm:mb-3">{video.folder.split('/').pop()}</p>
         {resumePct > 0 && resumePct < 95 && (
-          <div className="w-48 h-1 bg-white/20 rounded-full mb-3">
+          <div className="w-32 sm:w-48 h-1 bg-white/20 rounded-full mb-2 sm:mb-3">
             <div className="h-full rounded-full" style={{ width: `${resumePct}%`, backgroundColor: PURPLE }} />
           </div>
         )}
         <button
           onClick={() => onPlay(video)}
-          className="flex items-center gap-2 px-5 py-2 text-white font-semibold rounded text-sm transition-colors"
+          className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-1.5 sm:py-2 text-white font-semibold rounded text-xs sm:text-sm transition-colors"
           style={{ backgroundColor: PURPLE }}
         >
-          <Play className="h-4 w-4 fill-current" />
+          <Play className="h-3.5 w-3.5 sm:h-4 sm:w-4 fill-current" />
           {resumePct > 0 && resumePct < 95 ? 'Resume' : 'Watch Now'}
         </button>
       </div>
 
       <button
         onClick={onToggleMute}
-        className="absolute bottom-8 right-8 p-2 rounded-full text-white/50 hover:text-white transition-colors"
+        className="absolute bottom-4 sm:bottom-8 right-4 sm:right-8 p-1.5 sm:p-2 rounded-full text-white/50 hover:text-white transition-colors"
         style={{ backgroundColor: 'rgba(255,255,255,0.1)' }}
       >
-        {muted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+        {muted ? <VolumeX className="h-4 w-4 sm:h-5 sm:w-5" /> : <Volume2 className="h-4 w-4 sm:h-5 sm:w-5" />}
       </button>
     </div>
   );
 }
 
-// Sidebar channel item
 function ChannelItem({ video, onPlay }: { video: VideoFile; onPlay: (v: VideoFile) => void }) {
   const colors = ['#e91916', '#00ad03', '#1e69ff', PURPLE, '#eb7a00', '#00c8af'];
   const color = colors[Math.abs(video.name.charCodeAt(0)) % colors.length];
@@ -122,7 +120,6 @@ function ChannelItem({ video, onPlay }: { video: VideoFile; onPlay: (v: VideoFil
   );
 }
 
-// Category card (portrait box-art style)
 function TwitchCard({ video, onPlay, watchHistory }: {
   video: VideoFile;
   onPlay: (v: VideoFile) => void;
@@ -151,7 +148,7 @@ function TwitchCard({ video, onPlay, watchHistory }: {
   return (
     <div
       ref={cardRef}
-      className="shrink-0 w-[180px] cursor-pointer group"
+      className="shrink-0 w-[130px] sm:w-[150px] md:w-[180px] cursor-pointer group"
       onClick={() => onPlay(video)}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
@@ -167,12 +164,12 @@ function TwitchCard({ video, onPlay, watchHistory }: {
           <img src={thumb} alt={video.name} className="w-full h-full object-cover" />
         ) : (
           <div className="w-full h-full flex items-center justify-center" style={{ backgroundColor: SURFACE }}>
-            <Play className="h-8 w-8 text-white/20" />
+            <Play className="h-6 w-6 sm:h-8 sm:w-8 text-white/20" />
           </div>
         )}
         {hovered && (
           <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-            <Play className="h-10 w-10 text-white fill-current drop-shadow-lg" />
+            <Play className="h-8 w-8 sm:h-10 sm:w-10 text-white fill-current drop-shadow-lg" />
           </div>
         )}
         {resumePct > 0 && resumePct < 95 && (
@@ -180,17 +177,16 @@ function TwitchCard({ video, onPlay, watchHistory }: {
             <div className="h-full" style={{ width: `${resumePct}%`, backgroundColor: PURPLE }} />
           </div>
         )}
-        {/* LIVE badge */}
-        <div className="absolute top-2 left-2 flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold text-white bg-red-600">
+        <div className="absolute top-1.5 left-1.5 sm:top-2 sm:left-2 flex items-center gap-1 px-1 sm:px-1.5 py-0.5 rounded text-[8px] sm:text-[10px] font-bold text-white bg-red-600">
           LIVE
         </div>
-        <div className="absolute bottom-2 left-2 flex items-center gap-1 text-[10px] text-white bg-black/60 rounded px-1.5 py-0.5">
-          <Eye className="h-2.5 w-2.5" /> {fakeViewers(video)}
+        <div className="absolute bottom-1.5 left-1.5 sm:bottom-2 sm:left-2 flex items-center gap-1 text-[8px] sm:text-[10px] text-white bg-black/60 rounded px-1 sm:px-1.5 py-0.5">
+          <Eye className="h-2 w-2 sm:h-2.5 sm:w-2.5" /> {fakeViewers(video)}
         </div>
       </div>
-      <div className="mt-1.5 px-0.5">
-        <p className="text-xs text-white/90 font-medium truncate">{video.name.replace(/\.[^/.]+$/, '')}</p>
-        <p className="text-[10px] text-white/40 truncate">{video.folder.split('/').pop()}</p>
+      <div className="mt-1 sm:mt-1.5 px-0.5">
+        <p className="text-[10px] sm:text-xs text-white/90 font-medium truncate">{video.name.replace(/\.[^/.]+$/, '')}</p>
+        <p className="text-[9px] sm:text-[10px] text-white/40 truncate">{video.folder.split('/').pop()}</p>
       </div>
     </div>
   );
@@ -212,25 +208,25 @@ function CategoryShelf({ title, videos, onPlay, watchHistory }: {
 
   return (
     <div
-      className="relative mb-6"
+      className="relative mb-4 sm:mb-6"
       onMouseEnter={() => setShowArrows(true)}
       onMouseLeave={() => setShowArrows(false)}
     >
-      <h3 className="text-white font-semibold text-sm mb-2 px-1">{title}</h3>
+      <h3 className="text-white font-semibold text-xs sm:text-sm mb-1.5 sm:mb-2 px-1">{title}</h3>
       <div className="relative">
         {showArrows && (
           <>
-            <button onClick={() => scroll('left')} className="absolute left-0 top-0 bottom-8 w-8 z-20 flex items-center justify-center bg-black/60 hover:bg-black/80 transition-colors rounded-r">
+            <button onClick={() => scroll('left')} className="absolute left-0 top-0 bottom-8 w-8 z-20 hidden sm:flex items-center justify-center bg-black/60 hover:bg-black/80 transition-colors rounded-r">
               <ChevronLeft className="h-5 w-5 text-white" />
             </button>
-            <button onClick={() => scroll('right')} className="absolute right-0 top-0 bottom-8 w-8 z-20 flex items-center justify-center bg-black/60 hover:bg-black/80 transition-colors rounded-l">
+            <button onClick={() => scroll('right')} className="absolute right-0 top-0 bottom-8 w-8 z-20 hidden sm:flex items-center justify-center bg-black/60 hover:bg-black/80 transition-colors rounded-l">
               <ChevronRight className="h-5 w-5 text-white" />
             </button>
           </>
         )}
         <div
           ref={scrollRef}
-          className="flex gap-3 overflow-x-scroll scroll-smooth"
+          className="flex gap-2 sm:gap-3 overflow-x-scroll scroll-smooth"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
           {videos.map(v => (
@@ -271,9 +267,9 @@ export function TwitchBrowser({ videos, onPlay, onExit, watchHistory = {}, noteC
   if (videos.length === 0) {
     return (
       <div className="fixed inset-0 flex items-center justify-center z-50" style={{ backgroundColor: BG }}>
-        <p className="text-white/50 text-lg">No videos. Open a folder to get started.</p>
-        <button onClick={onExit} className="absolute top-6 right-6 text-white/70 hover:text-white">
-          <X className="h-6 w-6" />
+        <p className="text-white/50 text-sm sm:text-lg">No videos. Open a folder to get started.</p>
+        <button onClick={onExit} className="absolute top-4 right-4 sm:top-6 sm:right-6 text-white/70 hover:text-white">
+          <X className="h-5 w-5 sm:h-6 sm:w-6" />
         </button>
       </div>
     );
@@ -281,8 +277,8 @@ export function TwitchBrowser({ videos, onPlay, onExit, watchHistory = {}, noteC
 
   return (
     <div className="fixed inset-0 z-50 flex" style={{ backgroundColor: BG }}>
-      {/* Sidebar */}
-      <div className="w-14 lg:w-56 shrink-0 flex flex-col border-r overflow-y-auto" style={{ borderColor: '#26262c', backgroundColor: SURFACE, scrollbarWidth: 'none' }}>
+      {/* Sidebar - hidden on mobile */}
+      <div className="hidden md:flex w-14 lg:w-56 shrink-0 flex-col border-r overflow-y-auto" style={{ borderColor: '#26262c', backgroundColor: SURFACE, scrollbarWidth: 'none' }}>
         <div className="p-3 flex items-center gap-2">
           <div className="w-7 h-7 rounded flex items-center justify-center" style={{ backgroundColor: PURPLE }}>
             <Play className="h-3.5 w-3.5 text-white fill-current" />
@@ -303,19 +299,22 @@ export function TwitchBrowser({ videos, onPlay, onExit, watchHistory = {}, noteC
       <div ref={containerRef} className="flex-1 overflow-y-auto" style={{ scrollbarWidth: 'none' }}>
         {/* Top nav */}
         <div
-          className="sticky top-0 z-40 flex items-center justify-between px-6 py-2.5 transition-colors duration-300"
+          className="sticky top-0 z-40 flex items-center justify-between px-3 sm:px-6 py-2 sm:py-2.5 transition-colors duration-300"
           style={{ backgroundColor: scrolled ? SURFACE : 'transparent' }}
         >
-          <div className="flex items-center gap-4">
-            <span className="text-white/60 text-sm font-medium hover:text-white cursor-pointer transition-colors">Following</span>
-            <span className="text-white text-sm font-medium border-b-2 pb-0.5" style={{ borderColor: PURPLE }}>Browse</span>
-            <span className="text-white/60 text-sm font-medium hover:text-white cursor-pointer transition-colors">Categories</span>
+          <div className="flex items-center gap-2 sm:gap-4">
+            <div className="flex md:hidden w-6 h-6 rounded items-center justify-center" style={{ backgroundColor: PURPLE }}>
+              <Play className="h-3 w-3 text-white fill-current" />
+            </div>
+            <span className="text-white/60 text-xs sm:text-sm font-medium hover:text-white cursor-pointer transition-colors">Following</span>
+            <span className="text-white text-xs sm:text-sm font-medium border-b-2 pb-0.5" style={{ borderColor: PURPLE }}>Browse</span>
+            <span className="text-white/60 text-xs sm:text-sm font-medium hover:text-white cursor-pointer transition-colors hidden sm:block">Categories</span>
           </div>
           <button
             onClick={onExit}
             className="text-white/50 hover:text-white text-xs flex items-center gap-1 transition-colors"
           >
-            <X className="h-4 w-4" /> Exit
+            <X className="h-4 w-4" /> <span className="hidden sm:inline">Exit</span>
           </button>
         </div>
 
@@ -329,10 +328,8 @@ export function TwitchBrowser({ videos, onPlay, onExit, watchHistory = {}, noteC
         />
 
         {/* Category shelves */}
-        <div className="px-6 pt-6 pb-20">
-          {/* Live Channels row (all videos) */}
+        <div className="px-3 sm:px-4 md:px-6 pt-4 sm:pt-6 pb-20">
           <CategoryShelf title="Live Channels" videos={videos.slice(0, 20)} onPlay={onPlay} watchHistory={watchHistory} />
-
           {grouped.map(([folder, vids]) => (
             <CategoryShelf key={folder} title={folder} videos={vids} onPlay={onPlay} watchHistory={watchHistory} />
           ))}

@@ -138,27 +138,27 @@ export function PlexPlayer({ video, onBack, onNext, onPrev, resumePosition, onPo
 
       {/* Top bar */}
       <div
-        className={`absolute top-0 left-0 right-0 flex items-center gap-4 px-6 py-4 bg-gradient-to-b from-black/70 to-transparent transition-opacity duration-500 ${showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+        className={`absolute top-0 left-0 right-0 flex items-center gap-3 sm:gap-4 px-3 sm:px-6 py-3 sm:py-4 bg-gradient-to-b from-black/70 to-transparent transition-opacity duration-500 ${showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
         onClick={e => e.stopPropagation()}
       >
         <button onClick={onBack} className="text-white hover:text-white/80 transition-colors">
-          <ArrowLeft className="h-5 w-5" />
+          <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
         </button>
-        <div>
-          <h2 className="text-white text-base font-medium">{video.name.replace(/\.[^/.]+$/, '')}</h2>
-          <p className="text-white/40 text-xs">{libraryName}</p>
+        <div className="min-w-0">
+          <h2 className="text-white text-sm sm:text-base font-medium truncate">{video.name.replace(/\.[^/.]+$/, '')}</h2>
+          <p className="text-white/40 text-[10px] sm:text-xs">{libraryName}</p>
         </div>
       </div>
 
       {/* Bottom controls */}
       <div
-        className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent px-6 pb-5 pt-14 transition-opacity duration-500 ${showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+        className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent px-3 sm:px-6 pb-4 sm:pb-5 pt-10 sm:pt-14 transition-opacity duration-500 ${showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
         onClick={e => e.stopPropagation()}
       >
         {/* Progress */}
         <div
           ref={progressRef}
-          className="relative w-full h-1 bg-white/15 rounded-full cursor-pointer group mb-4 hover:h-2 transition-all"
+          className="relative w-full h-1.5 sm:h-1 bg-white/15 rounded-full cursor-pointer group mb-3 sm:mb-4 hover:h-2 transition-all"
           onClick={seek}
           onMouseMove={handleProgressHover}
           onMouseLeave={() => setHoverTime(null)}
@@ -174,20 +174,20 @@ export function PlexPlayer({ video, onBack, onNext, onPrev, resumePosition, onPo
         </div>
 
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            {onPrev && <button onClick={onPrev} className="text-white/60 hover:text-white"><SkipBack className="h-5 w-5" /></button>}
-            <button onClick={() => skip(-10)} className="text-white/60 hover:text-white text-xs font-medium rounded-full w-8 h-8 flex items-center justify-center bg-white/10 hover:bg-white/20 transition-colors">
+          <div className="flex items-center gap-2 sm:gap-4">
+            {onPrev && <button onClick={onPrev} className="text-white/60 hover:text-white hidden sm:block"><SkipBack className="h-5 w-5" /></button>}
+            <button onClick={() => skip(-10)} className="text-white/60 hover:text-white text-[10px] sm:text-xs font-medium rounded-full w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center bg-white/10 hover:bg-white/20 transition-colors">
               10
             </button>
-            <button onClick={togglePlay} className="text-white hover:text-white/80 w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors">
-              {playing ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5 fill-current" />}
+            <button onClick={togglePlay} className="text-white hover:text-white/80 w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors">
+              {playing ? <Pause className="h-4 w-4 sm:h-5 sm:w-5" /> : <Play className="h-4 w-4 sm:h-5 sm:w-5 fill-current" />}
             </button>
-            <button onClick={() => skip(10)} className="text-white/60 hover:text-white text-xs font-medium rounded-full w-8 h-8 flex items-center justify-center bg-white/10 hover:bg-white/20 transition-colors">
+            <button onClick={() => skip(10)} className="text-white/60 hover:text-white text-[10px] sm:text-xs font-medium rounded-full w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center bg-white/10 hover:bg-white/20 transition-colors">
               10
             </button>
-            {onNext && <button onClick={onNext} className="text-white/60 hover:text-white"><SkipForward className="h-5 w-5" /></button>}
+            {onNext && <button onClick={onNext} className="text-white/60 hover:text-white hidden sm:block"><SkipForward className="h-5 w-5" /></button>}
 
-            <div className="flex items-center gap-2 group/vol">
+            <div className="hidden sm:flex items-center gap-2 group/vol">
               <button onClick={() => { setMuted(m => { const next = !m; if (videoRef.current) videoRef.current.muted = next; return next; }); }} className="text-white/60 hover:text-white">
                 {muted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
               </button>
@@ -195,11 +195,11 @@ export function PlexPlayer({ video, onBack, onNext, onPrev, resumePosition, onPo
                 className="w-0 group-hover/vol:w-20 transition-all duration-200 h-1 cursor-pointer" style={{ accentColor: ORANGE }} />
             </div>
 
-            <span className="text-white/50 text-xs">{formatTime(currentTime)} / {formatTime(duration)}</span>
+            <span className="text-white/50 text-[10px] sm:text-xs">{formatTime(currentTime)} / {formatTime(duration)}</span>
           </div>
 
-          <div className="flex items-center gap-3">
-            <div className="relative">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="relative hidden sm:block">
               <button onClick={() => setShowSpeed(!showSpeed)} className="text-white/60 hover:text-white text-xs font-medium">{speed}x</button>
               {showSpeed && (
                 <div className="absolute bottom-full right-0 mb-2 rounded-lg py-1 shadow-xl" style={{ backgroundColor: BG }}>
@@ -211,10 +211,10 @@ export function PlexPlayer({ video, onBack, onNext, onPrev, resumePosition, onPo
               )}
             </div>
             {video.subtitleFiles.length > 0 && (
-              <button className="text-white/60 hover:text-white"><Subtitles className="h-5 w-5" /></button>
+              <button className="text-white/60 hover:text-white hidden sm:block"><Subtitles className="h-5 w-5" /></button>
             )}
             <button onClick={toggleFullscreen} className="text-white/60 hover:text-white">
-              {isFullscreen ? <Minimize className="h-5 w-5" /> : <Maximize className="h-5 w-5" />}
+              {isFullscreen ? <Minimize className="h-4 w-4 sm:h-5 sm:w-5" /> : <Maximize className="h-4 w-4 sm:h-5 sm:w-5" />}
             </button>
           </div>
         </div>
