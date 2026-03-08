@@ -323,8 +323,8 @@ export function PlayerControls({ videoRef, onPrev, onNext, onStop }: PlayerContr
               style={{ width: `${progress}%` }} className="absolute top-0 left-0 h-full rounded-sm bg-primary"
             />
             <div
-              className="absolute top-1/2 -translate-y-1/2 h-3 w-3 rounded-full border border-[#999]"
-              style={{ left: `calc(${progress}% - 6px)`, background: '#ff6600' }}
+              className="absolute top-1/2 -translate-y-1/2 h-3 w-3 rounded-full border border-white/30 bg-primary"
+              style={{ left: `calc(${progress}% - 6px)` }}
             />
             {/* Hover time tooltip */}
             {hoverTime !== null && (
