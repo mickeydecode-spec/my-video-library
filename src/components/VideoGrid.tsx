@@ -31,68 +31,7 @@ function getResumeInfo(video: VideoFile, watchHistory: Record<string, WatchHisto
   return { resumePercent, resumeTime };
 }
 
-// Netflix: horizontal scroll rows grouped by folder
-function NetflixLayout({ videos, onPlay, watchHistory, noteCounts, videoTags }: Omit<VideoGridProps, 'layout' | 'webLayout'>) {
-  const grouped = useMemo(() => {
-    const map = new Map<string, VideoFile[]>();
-    videos.forEach(v => {
-      const folder = v.folder.split('/').pop() || 'Uncategorized';
-      if (!map.has(folder)) map.set(folder, []);
-      map.get(folder)!.push(v);
-    });
-    return Array.from(map.entries());
-  }, [videos]);
-
-  if (videos.length === 0) return <EmptyGrid />;
-
-  const heroVideo = videos[0];
-  const { resumePercent: heroPct, resumeTime: heroTime } = getResumeInfo(heroVideo, watchHistory || {});
-
-  return (
-    <div className="flex flex-col gap-6 p-4">
-      {/* Hero */}
-      <div className="w-full">
-        <VideoCard
-          video={heroVideo}
-          onClick={() => onPlay(heroVideo)}
-          resumePercent={heroPct}
-          resumeTime={heroTime}
-          noteCount={noteCounts?.[heroVideo.path]}
-          tags={videoTags?.[heroVideo.path]}
-          variant="hero"
-        />
-      </div>
-
-      {/* Rows */}
-      {grouped.map(([folder, vids]) => (
-        <div key={folder}>
-          <div className="flex items-center gap-2 mb-2 px-1">
-            <h3 className="text-sm font-semibold">{folder}</h3>
-            <ChevronRight className="h-4 w-4 text-muted-foreground" />
-          </div>
-          <div className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory scrollbar-thin">
-            {vids.map(video => {
-              const { resumePercent, resumeTime } = getResumeInfo(video, watchHistory || {});
-              return (
-                <div key={video.id} className="snap-start shrink-0 w-56">
-                  <VideoCard
-                    video={video}
-                    onClick={() => onPlay(video)}
-                    resumePercent={resumePercent}
-                    resumeTime={resumeTime}
-                    noteCount={noteCounts?.[video.path]}
-                    tags={videoTags?.[video.path]}
-                    variant="horizontal"
-                  />
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
+// Netflix is now handled by NetflixBrowser component in Index.tsx
 
 // Twitch: large hero + compact grid
 function TwitchLayout({ videos, onPlay, watchHistory, noteCounts, videoTags }: Omit<VideoGridProps, 'layout' | 'webLayout'>) {
