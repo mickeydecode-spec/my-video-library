@@ -1,9 +1,12 @@
+import { useMemo } from 'react';
 import { VideoFile } from '@/lib/fileScanner';
 import { VideoCard } from './VideoCard';
 import { WatchHistoryEntry } from '@/hooks/useWatchHistory';
 import { LayoutMode } from '@/hooks/useLayoutPreference';
-import { Play, Subtitles, Bookmark } from 'lucide-react';
+import { WebLayout } from '@/hooks/useWebLayout';
+import { Play, Subtitles, Bookmark, ChevronRight } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 
 interface VideoGridProps {
   videos: VideoFile[];
@@ -12,6 +15,7 @@ interface VideoGridProps {
   noteCounts?: Record<string, number>;
   videoTags?: Record<string, string[]>;
   layout?: LayoutMode;
+  webLayout?: WebLayout;
 }
 
 function formatTime(seconds: number): string {
@@ -20,15 +24,192 @@ function formatTime(seconds: number): string {
   return `${m}:${s.toString().padStart(2, '0')}`;
 }
 
-export function VideoGrid({ videos, onPlay, watchHistory = {}, noteCounts = {}, videoTags = {}, layout = 'grid' }: VideoGridProps) {
-  if (videos.length === 0) {
-    return (
-      <div className="flex flex-1 items-center justify-center text-muted-foreground p-12">
-        <p>No videos found. Open a folder to get started.</p>
+function getResumeInfo(video: VideoFile, watchHistory: Record<string, WatchHistoryEntry>) {
+  const entry = watchHistory[video.path];
+  const resumePercent = entry && entry.duration > 0 ? (entry.position / entry.duration) * 100 : undefined;
+  const resumeTime = entry ? formatTime(entry.position) : undefined;
+  return { resumePercent, resumeTime };
+}
+
+// Netflix: horizontal scroll rows grouped by folder
+function NetflixLayout({ videos, onPlay, watchHistory, noteCounts, videoTags }: Omit<VideoGridProps, 'layout' | 'webLayout'>) {
+  const grouped = useMemo(() => {
+    const map = new Map<string, VideoFile[]>();
+    videos.forEach(v => {
+      const folder = v.folder.split('/').pop() || 'Uncategorized';
+      if (!map.has(folder)) map.set(folder, []);
+      map.get(folder)!.push(v);
+    });
+    return Array.from(map.entries());
+  }, [videos]);
+
+  if (videos.length === 0) return <EmptyGrid />;
+
+  const heroVideo = videos[0];
+  const { resumePercent: heroPct, resumeTime: heroTime } = getResumeInfo(heroVideo, watchHistory || {});
+
+  return (
+    <div className="flex flex-col gap-6 p-4">
+      {/* Hero */}
+      <div className="w-full">
+        <VideoCard
+          video={heroVideo}
+          onClick={() => onPlay(heroVideo)}
+          resumePercent={heroPct}
+          resumeTime={heroTime}
+          noteCount={noteCounts?.[heroVideo.path]}
+          tags={videoTags?.[heroVideo.path]}
+          variant="hero"
+        />
       </div>
-    );
+
+      {/* Rows */}
+      {grouped.map(([folder, vids]) => (
+        <div key={folder}>
+          <div className="flex items-center gap-2 mb-2 px-1">
+            <h3 className="text-sm font-semibold">{folder}</h3>
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          </div>
+          <div className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory scrollbar-thin">
+            {vids.map(video => {
+              const { resumePercent, resumeTime } = getResumeInfo(video, watchHistory || {});
+              return (
+                <div key={video.id} className="snap-start shrink-0 w-56">
+                  <VideoCard
+                    video={video}
+                    onClick={() => onPlay(video)}
+                    resumePercent={resumePercent}
+                    resumeTime={resumeTime}
+                    noteCount={noteCounts?.[video.path]}
+                    tags={videoTags?.[video.path]}
+                    variant="horizontal"
+                  />
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// Twitch: large hero + compact grid
+function TwitchLayout({ videos, onPlay, watchHistory, noteCounts, videoTags }: Omit<VideoGridProps, 'layout' | 'webLayout'>) {
+  if (videos.length === 0) return <EmptyGrid />;
+
+  const heroVideo = videos[0];
+  const rest = videos.slice(1);
+  const { resumePercent: heroPct, resumeTime: heroTime } = getResumeInfo(heroVideo, watchHistory || {});
+
+  return (
+    <div className="flex flex-col gap-4 p-4">
+      <VideoCard
+        video={heroVideo}
+        onClick={() => onPlay(heroVideo)}
+        resumePercent={heroPct}
+        resumeTime={heroTime}
+        noteCount={noteCounts?.[heroVideo.path]}
+        tags={videoTags?.[heroVideo.path]}
+        variant="hero"
+      />
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+        {rest.map(video => {
+          const { resumePercent, resumeTime } = getResumeInfo(video, watchHistory || {});
+          return (
+            <VideoCard
+              key={video.id}
+              video={video}
+              onClick={() => onPlay(video)}
+              resumePercent={resumePercent}
+              resumeTime={resumeTime}
+              noteCount={noteCounts?.[video.path]}
+              tags={videoTags?.[video.path]}
+            />
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// Plex: portrait poster cards
+function PlexLayout({ videos, onPlay, watchHistory, noteCounts, videoTags }: Omit<VideoGridProps, 'layout' | 'webLayout'>) {
+  if (videos.length === 0) return <EmptyGrid />;
+
+  return (
+    <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 gap-3 p-4">
+      {videos.map(video => {
+        const { resumePercent, resumeTime } = getResumeInfo(video, watchHistory || {});
+        return (
+          <VideoCard
+            key={video.id}
+            video={video}
+            onClick={() => onPlay(video)}
+            resumePercent={resumePercent}
+            resumeTime={resumeTime}
+            noteCount={noteCounts?.[video.path]}
+            tags={videoTags?.[video.path]}
+            variant="portrait"
+          />
+        );
+      })}
+    </div>
+  );
+}
+
+// TikTok: single centered column
+function TikTokLayout({ videos, onPlay, watchHistory, noteCounts, videoTags }: Omit<VideoGridProps, 'layout' | 'webLayout'>) {
+  if (videos.length === 0) return <EmptyGrid />;
+
+  return (
+    <div className="flex flex-col items-center gap-6 p-4 max-w-md mx-auto">
+      {videos.map(video => {
+        const { resumePercent, resumeTime } = getResumeInfo(video, watchHistory || {});
+        return (
+          <div key={video.id} className="w-full">
+            <VideoCard
+              video={video}
+              onClick={() => onPlay(video)}
+              resumePercent={resumePercent}
+              resumeTime={resumeTime}
+              noteCount={noteCounts?.[video.path]}
+              tags={videoTags?.[video.path]}
+              variant="vertical"
+            />
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function EmptyGrid() {
+  return (
+    <div className="flex flex-1 items-center justify-center text-muted-foreground p-12">
+      <p>No videos found. Open a folder to get started.</p>
+    </div>
+  );
+}
+
+export function VideoGrid({ videos, onPlay, watchHistory = {}, noteCounts = {}, videoTags = {}, layout = 'grid', webLayout = 'youtube' }: VideoGridProps) {
+  // Web layout takes priority
+  if (webLayout === 'netflix') {
+    return <NetflixLayout videos={videos} onPlay={onPlay} watchHistory={watchHistory} noteCounts={noteCounts} videoTags={videoTags} />;
+  }
+  if (webLayout === 'twitch') {
+    return <TwitchLayout videos={videos} onPlay={onPlay} watchHistory={watchHistory} noteCounts={noteCounts} videoTags={videoTags} />;
+  }
+  if (webLayout === 'plex') {
+    return <PlexLayout videos={videos} onPlay={onPlay} watchHistory={watchHistory} noteCounts={noteCounts} videoTags={videoTags} />;
+  }
+  if (webLayout === 'tiktok') {
+    return <TikTokLayout videos={videos} onPlay={onPlay} watchHistory={watchHistory} noteCounts={noteCounts} videoTags={videoTags} />;
   }
 
+  if (videos.length === 0) return <EmptyGrid />;
+
+  // YouTube default / list / compact modes
   if (layout === 'list') {
     return (
       <div className="flex flex-col gap-1 p-4">
@@ -94,12 +275,7 @@ export function VideoGrid({ videos, onPlay, watchHistory = {}, noteCounts = {}, 
   return (
     <div className={gridClass}>
       {videos.map(video => {
-        const entry = watchHistory[video.path];
-        const resumePercent = entry && entry.duration > 0
-          ? (entry.position / entry.duration) * 100
-          : undefined;
-        const resumeTime = entry ? formatTime(entry.position) : undefined;
-
+        const { resumePercent, resumeTime } = getResumeInfo(video, watchHistory);
         return (
           <VideoCard
             key={video.id}

@@ -12,6 +12,7 @@ import { useVideoNotes } from '@/hooks/useVideoNotes';
 import { useTagManager } from '@/hooks/useTagManager';
 import { useTheme } from '@/hooks/useTheme';
 import { useLayoutPreference } from '@/hooks/useLayoutPreference';
+import { useWebLayout } from '@/hooks/useWebLayout';
 import { useVoiceControl } from '@/hooks/useVoiceControl';
 import { useDataExport } from '@/hooks/useDataExport';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -31,6 +32,7 @@ const Index = () => {
   const { tags, smartPlaylists, addTag, removeTag, getTagsForVideo, getAllTags, addSmartPlaylist, removeSmartPlaylist } = useTagManager();
   const { mode, preset, setMode, setPreset } = useTheme();
   const { layout, setLayout } = useLayoutPreference();
+  const { webLayout, setWebLayout, config } = useWebLayout();
   const { exportData, importData } = useDataExport();
   const { toast } = useToast();
 
@@ -46,7 +48,6 @@ const Index = () => {
   // Voice control
   const voice = useVoiceControl({
     onPlay: () => {
-      // Resume or play first video
       if (currentVideo) {
         const vid = document.querySelector('video');
         vid?.play();
@@ -176,6 +177,9 @@ const Index = () => {
     }
   }, [importData, toast]);
 
+  // Sidebar visibility based on web layout
+  const effectiveSidebarOpen = config.showSidebar ? sidebarOpen : false;
+
   return (
     <div className="flex h-screen flex-col bg-background">
       <Header
@@ -200,7 +204,7 @@ const Index = () => {
           playlists={playlists}
           activePlaylist={filterPlaylist}
           onSelectPlaylist={handleSelectPlaylist}
-          isOpen={sidebarOpen}
+          isOpen={effectiveSidebarOpen}
           totalVideos={allVideos.length}
           recentlyWatched={recentlyWatched}
           onShowHistory={handleShowHistory}
@@ -209,6 +213,8 @@ const Index = () => {
           activeSmartPlaylist={activeSmartPlaylist}
           onSelectSmartPlaylist={handleSelectSmartPlaylist}
           onRemoveSmartPlaylist={removeSmartPlaylist}
+          webLayout={webLayout}
+          onWebLayoutChange={setWebLayout}
         />
 
         <main className="flex-1 overflow-hidden flex flex-col">
@@ -257,6 +263,7 @@ const Index = () => {
                   noteCounts={noteCounts}
                   videoTags={videoTagsMap}
                   layout={layout}
+                  webLayout={webLayout}
                 />
               </ScrollArea>
             </>
