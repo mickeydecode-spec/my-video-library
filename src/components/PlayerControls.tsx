@@ -336,7 +336,7 @@ export function PlayerControls({ videoRef, onPrev, onNext, onStop }: PlayerContr
               </div>
             )}
           </div>
-          <span className="font-mono text-[11px] min-w-[45px] text-right">{formatTime(duration)}</span>
+          <span className="font-mono text-[11px] min-w-[45px] text-right text-white/70">{formatTime(duration)}</span>
         </div>
       </div>
 
