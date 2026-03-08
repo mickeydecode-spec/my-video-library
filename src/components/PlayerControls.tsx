@@ -476,8 +476,8 @@ export function PlayerControls({ videoRef, onPrev, onNext, onStop }: PlayerContr
 
         {/* Volume - VLC style: icon + horizontal slider + percentage */}
         <div className="flex items-center gap-1 mr-1">
-          <button onClick={toggleMute} className="p-1 rounded hover:bg-black/10 transition-colors" title="Mute (M)">
-            <VolumeIcon className="h-3.5 w-3.5" style={{ color: '#333' }} />
+          <button onClick={toggleMute} className="p-1 rounded hover:bg-white/10 transition-colors" title="Mute (M)">
+            <VolumeIcon className="h-3.5 w-3.5 text-white/80" />
           </button>
           <div className="w-20">
             <Slider
