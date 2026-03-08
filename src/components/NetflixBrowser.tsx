@@ -141,7 +141,8 @@ function CategoryRow({ title, videos, onPlay, watchHistory, noteCounts, videoTag
         )}
         <div
           ref={scrollRef}
-          className="flex gap-1.5 overflow-x-auto scrollbar-none scroll-smooth"
+          className="flex gap-2 overflow-x-scroll scrollbar-none scroll-smooth"
+          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
           {videos.map(video => (
             <NetflixVideoCard
