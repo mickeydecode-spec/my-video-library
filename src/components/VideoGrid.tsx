@@ -158,31 +158,7 @@ function PlexLayout({ videos, onPlay, watchHistory, noteCounts, videoTags }: Omi
   );
 }
 
-// TikTok: single centered column
-function TikTokLayout({ videos, onPlay, watchHistory, noteCounts, videoTags }: Omit<VideoGridProps, 'layout' | 'webLayout'>) {
-  if (videos.length === 0) return <EmptyGrid />;
-
-  return (
-    <div className="flex flex-col items-center gap-6 p-4 max-w-md mx-auto">
-      {videos.map(video => {
-        const { resumePercent, resumeTime } = getResumeInfo(video, watchHistory || {});
-        return (
-          <div key={video.id} className="w-full">
-            <VideoCard
-              video={video}
-              onClick={() => onPlay(video)}
-              resumePercent={resumePercent}
-              resumeTime={resumeTime}
-              noteCount={noteCounts?.[video.path]}
-              tags={videoTags?.[video.path]}
-              variant="vertical"
-            />
-          </div>
-        );
-      })}
-    </div>
-  );
-}
+// TikTok is now handled by TikTokFeed component in Index.tsx
 
 function EmptyGrid() {
   return (
@@ -203,8 +179,9 @@ export function VideoGrid({ videos, onPlay, watchHistory = {}, noteCounts = {}, 
   if (webLayout === 'plex') {
     return <PlexLayout videos={videos} onPlay={onPlay} watchHistory={watchHistory} noteCounts={noteCounts} videoTags={videoTags} />;
   }
+  // TikTok handled by TikTokFeed in Index.tsx — fallback to default grid
   if (webLayout === 'tiktok') {
-    return <TikTokLayout videos={videos} onPlay={onPlay} watchHistory={watchHistory} noteCounts={noteCounts} videoTags={videoTags} />;
+    // Should not reach here, but just in case
   }
 
   if (videos.length === 0) return <EmptyGrid />;
