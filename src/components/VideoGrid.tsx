@@ -44,18 +44,7 @@ function EmptyGrid() {
 }
 
 export function VideoGrid({ videos, onPlay, watchHistory = {}, noteCounts = {}, videoTags = {}, layout = 'grid', webLayout = 'youtube' }: VideoGridProps) {
-  // Web layout takes priority
-  // Netflix handled by NetflixBrowser in Index.tsx
-  if (webLayout === 'twitch') {
-    return <TwitchLayout videos={videos} onPlay={onPlay} watchHistory={watchHistory} noteCounts={noteCounts} videoTags={videoTags} />;
-  }
-  if (webLayout === 'plex') {
-    return <PlexLayout videos={videos} onPlay={onPlay} watchHistory={watchHistory} noteCounts={noteCounts} videoTags={videoTags} />;
-  }
-  // TikTok handled by TikTokFeed in Index.tsx — fallback to default grid
-  if (webLayout === 'tiktok') {
-    // Should not reach here, but just in case
-  }
+  // Netflix, Twitch, Plex, TikTok are handled by dedicated components in Index.tsx
 
   if (videos.length === 0) return <EmptyGrid />;
 
