@@ -345,12 +345,12 @@ export function PlayerControls({ videoRef, onPrev, onNext, onStop }: PlayerContr
         {/* Play / Pause */}
         <button
           onClick={togglePlay}
-          className="p-1.5 rounded hover:bg-black/10 transition-colors"
+          className="p-1.5 rounded hover:bg-white/10 transition-colors"
           title={isPlaying ? 'Pause' : 'Play'}
         >
           {isPlaying
-            ? <Pause className="h-4 w-4" style={{ color: '#333' }} />
-            : <Play className="h-4 w-4" style={{ color: '#333' }} />
+            ? <Pause className="h-4 w-4 text-white/80" />
+            : <Play className="h-4 w-4 text-white/80" />
           }
         </button>
 
