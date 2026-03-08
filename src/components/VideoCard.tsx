@@ -143,7 +143,7 @@ export const VideoCard = memo(function VideoCard({ video, onClick, resumePercent
     generateThumbnail(video.url).then(result => {
       if (!cancelled) {
         setThumbnail(result.thumb);
-        setDuration(result.duration);
+        setDuration(formatDuration(result.duration));
       }
     });
     return () => { cancelled = true; };
