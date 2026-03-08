@@ -198,7 +198,7 @@ export function VideoPlayer({
             </MenubarContent>
           </MenubarMenu>
           <MenubarMenu>
-            <MenubarTrigger className="text-xs px-2 py-0.5 h-6 font-normal" style={{ color: '#333' }}>Playback</MenubarTrigger>
+            <MenubarTrigger className="text-xs px-2 py-0.5 h-6 font-normal text-white/80 hover:text-white">Playback</MenubarTrigger>
             <MenubarContent>
               <MenubarItem onClick={onPrev}>Previous <MenubarShortcut>P</MenubarShortcut></MenubarItem>
               <MenubarItem onClick={onNext}>Next <MenubarShortcut>N</MenubarShortcut></MenubarItem>
