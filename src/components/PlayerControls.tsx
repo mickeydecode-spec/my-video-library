@@ -55,7 +55,10 @@ export function PlayerControls({ videoRef, onPrev, onNext, onStop }: PlayerContr
   const [audioTracks, setAudioTracks] = useState<{ id: number; label: string; language: string; enabled: boolean }[]>([]);
   const [subtitleSize, setSubtitleSize] = useState(100);
   const [isSeeking, setIsSeeking] = useState(false);
-
+  const [showRemaining, setShowRemaining] = useState(false);
+  const [hoverTime, setHoverTime] = useState<number | null>(null);
+  const [hoverPos, setHoverPos] = useState(0);
+  const [buffered, setBuffered] = useState(0);
   const gainNodeRef = useRef<GainNode | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const sourceRef = useRef<MediaElementAudioSourceNode | null>(null);
@@ -240,6 +243,28 @@ export function PlayerControls({ videoRef, onPrev, onNext, onStop }: PlayerContr
 
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
 
+  // Buffered range tracking
+  useEffect(() => {
+    const el = videoRef.current;
+    if (!el) return;
+    const updateBuffered = () => {
+      if (el.buffered.length > 0 && el.duration > 0) {
+        setBuffered((el.buffered.end(el.buffered.length - 1) / el.duration) * 100);
+      }
+    };
+    el.addEventListener('progress', updateBuffered);
+    return () => el.removeEventListener('progress', updateBuffered);
+  }, [videoRef]);
+
+  const handleSeekbarHover = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const bar = seekbarRef.current;
+    if (!bar || !duration) return;
+    const rect = bar.getBoundingClientRect();
+    const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    setHoverTime(ratio * duration);
+    setHoverPos(ratio * 100);
+  }, [duration]);
+
   const VolumeIcon = isMuted || volume === 0 ? VolumeX : volume < 30 ? Volume : volume < 70 ? Volume1 : Volume2;
 
   // Keyboard shortcuts
@@ -273,13 +298,26 @@ export function PlayerControls({ videoRef, onPrev, onNext, onStop }: PlayerContr
       {/* Seekbar - VLC style thin bar */}
       <div className="px-1 pt-1">
         <div className="flex items-center gap-2 text-xs" style={{ color: '#333' }}>
-          <span className="font-mono text-[11px] min-w-[45px]">{formatTime(currentTime)}</span>
+          <button
+            className="font-mono text-[11px] min-w-[45px] hover:text-[#ff6600] transition-colors bg-transparent border-none cursor-pointer p-0 text-left"
+            onClick={() => setShowRemaining(!showRemaining)}
+            title="Toggle elapsed/remaining"
+          >
+            {showRemaining && duration > 0 ? `-${formatTime(duration - currentTime)}` : formatTime(currentTime)}
+          </button>
           <div
             ref={seekbarRef}
-            className="flex-1 h-[6px] rounded-sm cursor-pointer relative"
+            className="flex-1 h-[6px] rounded-sm cursor-pointer relative group/seek"
             style={{ background: '#c0c0c0' }}
             onClick={handleSeekbarClick}
+            onMouseMove={handleSeekbarHover}
+            onMouseLeave={() => setHoverTime(null)}
           >
+            {/* Buffered range */}
+            <div
+              className="absolute top-0 left-0 h-full rounded-sm"
+              style={{ width: `${buffered}%`, background: '#a0a0a0' }}
+            />
             <div
               className="absolute top-0 left-0 h-full rounded-sm"
               style={{ width: `${progress}%`, background: '#ff6600' }}
@@ -288,6 +326,15 @@ export function PlayerControls({ videoRef, onPrev, onNext, onStop }: PlayerContr
               className="absolute top-1/2 -translate-y-1/2 h-3 w-3 rounded-full border border-[#999]"
               style={{ left: `calc(${progress}% - 6px)`, background: '#ff6600' }}
             />
+            {/* Hover time tooltip */}
+            {hoverTime !== null && (
+              <div
+                className="absolute -top-7 -translate-x-1/2 bg-[#333] text-white text-[10px] px-1.5 py-0.5 rounded pointer-events-none whitespace-nowrap"
+                style={{ left: `${hoverPos}%` }}
+              >
+                {formatTime(hoverTime)}
+              </div>
+            )}
           </div>
           <span className="font-mono text-[11px] min-w-[45px] text-right">{formatTime(duration)}</span>
         </div>

@@ -49,7 +49,7 @@ export function useVideoLibrary() {
   }, [currentVideo, currentPlaylist]);
 
   const displayedVideos = filterPlaylist
-    ? videos.filter(v => v.folder === filterPlaylist)
+    ? videos.filter(v => v.folder === filterPlaylist || v.folder.startsWith(filterPlaylist + '/'))
     : videos;
 
   return {
