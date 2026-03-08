@@ -21,6 +21,10 @@ import { useToast } from '@/hooks/use-toast';
 import { TikTokFeed } from '@/components/TikTokFeed';
 import { NetflixBrowser } from '@/components/NetflixBrowser';
 import { NetflixPlayer } from '@/components/NetflixPlayer';
+import { TwitchBrowser } from '@/components/TwitchBrowser';
+import { TwitchPlayer } from '@/components/TwitchPlayer';
+import { PlexBrowser } from '@/components/PlexBrowser';
+import { PlexPlayer } from '@/components/PlexPlayer';
 
 const Index = () => {
   const {
