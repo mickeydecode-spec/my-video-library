@@ -3,6 +3,7 @@ import { VideoFile } from '@/lib/fileScanner';
 import { WatchHistoryEntry } from '@/hooks/useWatchHistory';
 import { Play, Info, ChevronLeft, ChevronRight, X, Volume2, VolumeX } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { thumbnailCache, generateThumbnail } from '@/components/VideoCard';
 
 interface NetflixBrowserProps {
   videos: VideoFile[];
