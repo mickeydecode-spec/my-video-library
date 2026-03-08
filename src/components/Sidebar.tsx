@@ -150,7 +150,7 @@ export function Sidebar({
           {playlists.map((pl, i) => (
             <button
               key={pl.path}
-              onClick={() => { onSelectPlaylist(pl.path); onSelectSmartPlaylist(null); }}
+              onClick={() => onSelectPlaylist(pl.path)}
               className={cn(
                 "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-accent animate-in fade-in slide-in-from-left-2 duration-200",
                 activePlaylist === pl.path && "bg-accent font-medium"
