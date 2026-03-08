@@ -179,8 +179,9 @@ export function VideoGrid({ videos, onPlay, watchHistory = {}, noteCounts = {}, 
   if (webLayout === 'plex') {
     return <PlexLayout videos={videos} onPlay={onPlay} watchHistory={watchHistory} noteCounts={noteCounts} videoTags={videoTags} />;
   }
+  // TikTok handled by TikTokFeed in Index.tsx — fallback to default grid
   if (webLayout === 'tiktok') {
-    return <TikTokLayout videos={videos} onPlay={onPlay} watchHistory={watchHistory} noteCounts={noteCounts} videoTags={videoTags} />;
+    // Should not reach here, but just in case
   }
 
   if (videos.length === 0) return <EmptyGrid />;
