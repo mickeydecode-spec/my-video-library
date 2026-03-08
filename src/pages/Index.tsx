@@ -18,6 +18,7 @@ import { useDataExport } from '@/hooks/useDataExport';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { TikTokFeed } from '@/components/TikTokFeed';
 
 const Index = () => {
   const {
