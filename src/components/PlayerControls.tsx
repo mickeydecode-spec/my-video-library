@@ -294,7 +294,7 @@ export function PlayerControls({ videoRef, onPrev, onNext, onStop }: PlayerContr
   }, [videoRef, speed, changeSpeed, toggleAbLoop, takeScreenshot, togglePlay, toggleFullscreen, toggleMute]);
 
   return (
-    <div className="flex flex-col select-none" style={{ background: '#e8e8e8', borderTop: '1px solid #c8c8c8' }}>
+    <div className="flex flex-col select-none bg-black/90 border-t border-white/10">
       {/* Seekbar - VLC style thin bar */}
       <div className="px-1 pt-1">
         <div className="flex items-center gap-2 text-xs" style={{ color: '#333' }}>
