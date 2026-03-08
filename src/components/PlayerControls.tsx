@@ -55,7 +55,10 @@ export function PlayerControls({ videoRef, onPrev, onNext, onStop }: PlayerContr
   const [audioTracks, setAudioTracks] = useState<{ id: number; label: string; language: string; enabled: boolean }[]>([]);
   const [subtitleSize, setSubtitleSize] = useState(100);
   const [isSeeking, setIsSeeking] = useState(false);
-
+  const [showRemaining, setShowRemaining] = useState(false);
+  const [hoverTime, setHoverTime] = useState<number | null>(null);
+  const [hoverPos, setHoverPos] = useState(0);
+  const [buffered, setBuffered] = useState(0);
   const gainNodeRef = useRef<GainNode | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const sourceRef = useRef<MediaElementAudioSourceNode | null>(null);
