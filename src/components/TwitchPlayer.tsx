@@ -41,9 +41,14 @@ export function TwitchPlayer({ video, onBack, onNext, onPrev, resumePosition, on
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [hoverTime, setHoverTime] = useState<number | null>(null);
   const [hoverX, setHoverX] = useState(0);
-  const [showChat, setShowChat] = useState(true);
+  const [showChat, setShowChat] = useState(false); // hidden by default on mobile
   const [speed, setSpeed] = useState(1);
   const [showSpeed, setShowSpeed] = useState(false);
+
+  // Show chat by default on desktop
+  useEffect(() => {
+    setShowChat(window.innerWidth >= 768);
+  }, []);
 
   const resetHideTimer = useCallback(() => {
     setShowControls(true);
@@ -131,7 +136,7 @@ export function TwitchPlayer({ video, onBack, onNext, onPrev, resumePosition, on
   const channelName = video.folder.split('/').pop() || 'Channel';
 
   return (
-    <div ref={containerRef} className="fixed inset-0 z-50 flex" style={{ backgroundColor: BG }}>
+    <div ref={containerRef} className="fixed inset-0 z-50 flex flex-col md:flex-row" style={{ backgroundColor: BG }}>
       {/* Video area */}
       <div
         className="flex-1 relative select-none"
@@ -143,30 +148,30 @@ export function TwitchPlayer({ video, onBack, onNext, onPrev, resumePosition, on
 
         {/* Top bar */}
         <div
-          className={`absolute top-0 left-0 right-0 flex items-center gap-3 px-4 py-3 bg-gradient-to-b from-black/70 to-transparent transition-opacity duration-500 ${showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+          className={`absolute top-0 left-0 right-0 flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 bg-gradient-to-b from-black/70 to-transparent transition-opacity duration-500 ${showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
           onClick={e => e.stopPropagation()}
         >
-          <button onClick={onBack} className="text-white hover:text-white/80"><ArrowLeft className="h-5 w-5" /></button>
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold" style={{ backgroundColor: PURPLE }}>
+          <button onClick={onBack} className="text-white hover:text-white/80"><ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" /></button>
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-white text-[10px] sm:text-xs font-bold shrink-0" style={{ backgroundColor: PURPLE }}>
               {channelName.charAt(0).toUpperCase()}
             </div>
-            <div>
-              <p className="text-white text-sm font-semibold">{channelName}</p>
-              <p className="text-white/50 text-xs truncate max-w-md">{video.name.replace(/\.[^/.]+$/, '')}</p>
+            <div className="min-w-0">
+              <p className="text-white text-xs sm:text-sm font-semibold truncate">{channelName}</p>
+              <p className="text-white/50 text-[10px] sm:text-xs truncate max-w-[200px] sm:max-w-md">{video.name.replace(/\.[^/.]+$/, '')}</p>
             </div>
           </div>
         </div>
 
         {/* Bottom controls */}
         <div
-          className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent px-4 pb-4 pt-12 transition-opacity duration-500 ${showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+          className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent px-3 sm:px-4 pb-3 sm:pb-4 pt-8 sm:pt-12 transition-opacity duration-500 ${showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
           onClick={e => e.stopPropagation()}
         >
           {/* Progress */}
           <div
             ref={progressRef}
-            className="relative w-full h-1 bg-white/20 rounded-full cursor-pointer group mb-3 hover:h-2 transition-all"
+            className="relative w-full h-1.5 sm:h-1 bg-white/20 rounded-full cursor-pointer group mb-2 sm:mb-3 hover:h-2 transition-all"
             onClick={seek}
             onMouseMove={handleProgressHover}
             onMouseLeave={() => setHoverTime(null)}
@@ -182,16 +187,16 @@ export function TwitchPlayer({ video, onBack, onNext, onPrev, resumePosition, on
           </div>
 
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              {onPrev && <button onClick={onPrev} className="text-white/70 hover:text-white"><SkipBack className="h-4 w-4" /></button>}
-              <button onClick={() => skip(-10)} className="text-white/70 hover:text-white"><SkipBack className="h-4 w-4" /></button>
+            <div className="flex items-center gap-2 sm:gap-3">
+              {onPrev && <button onClick={onPrev} className="text-white/70 hover:text-white hidden sm:block"><SkipBack className="h-4 w-4" /></button>}
+              <button onClick={() => skip(-10)} className="text-white/70 hover:text-white"><SkipBack className="h-3.5 w-3.5 sm:h-4 sm:w-4" /></button>
               <button onClick={togglePlay} className="text-white hover:text-white/80">
-                {playing ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6 fill-current" />}
+                {playing ? <Pause className="h-5 w-5 sm:h-6 sm:w-6" /> : <Play className="h-5 w-5 sm:h-6 sm:w-6 fill-current" />}
               </button>
-              <button onClick={() => skip(10)} className="text-white/70 hover:text-white"><SkipForward className="h-4 w-4" /></button>
-              {onNext && <button onClick={onNext} className="text-white/70 hover:text-white"><SkipForward className="h-4 w-4" /></button>}
+              <button onClick={() => skip(10)} className="text-white/70 hover:text-white"><SkipForward className="h-3.5 w-3.5 sm:h-4 sm:w-4" /></button>
+              {onNext && <button onClick={onNext} className="text-white/70 hover:text-white hidden sm:block"><SkipForward className="h-4 w-4" /></button>}
 
-              <div className="flex items-center gap-2 group/vol">
+              <div className="flex items-center gap-2 group/vol hidden sm:flex">
                 <button onClick={() => { setMuted(m => { const next = !m; if (videoRef.current) videoRef.current.muted = next; return next; }); }} className="text-white/70 hover:text-white">
                   {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
                 </button>
@@ -199,11 +204,11 @@ export function TwitchPlayer({ video, onBack, onNext, onPrev, resumePosition, on
                   className="w-0 group-hover/vol:w-16 transition-all duration-200 h-1 cursor-pointer" style={{ accentColor: PURPLE }} />
               </div>
 
-              <span className="text-white/60 text-xs">{formatTime(currentTime)} / {formatTime(duration)}</span>
+              <span className="text-white/60 text-[10px] sm:text-xs">{formatTime(currentTime)} / {formatTime(duration)}</span>
             </div>
 
-            <div className="flex items-center gap-3">
-              <div className="relative">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="relative hidden sm:block">
                 <button onClick={() => setShowSpeed(!showSpeed)} className="text-white/70 hover:text-white text-xs font-medium">{speed}x</button>
                 {showSpeed && (
                   <div className="absolute bottom-full right-0 mb-2 rounded py-1 shadow-xl" style={{ backgroundColor: SURFACE }}>
@@ -214,7 +219,7 @@ export function TwitchPlayer({ video, onBack, onNext, onPrev, resumePosition, on
                   </div>
                 )}
               </div>
-              <button onClick={() => setShowChat(!showChat)} className="text-white/70 hover:text-white" title="Toggle Chat">
+              <button onClick={() => setShowChat(!showChat)} className="text-white/70 hover:text-white hidden md:block" title="Toggle Chat">
                 <MessageSquare className="h-4 w-4" />
               </button>
               <button onClick={toggleFullscreen} className="text-white/70 hover:text-white">
@@ -225,9 +230,9 @@ export function TwitchPlayer({ video, onBack, onNext, onPrev, resumePosition, on
         </div>
       </div>
 
-      {/* Chat panel */}
+      {/* Chat panel - hidden on mobile */}
       {showChat && (
-        <div className="w-80 shrink-0 flex flex-col border-l" style={{ borderColor: '#26262c', backgroundColor: SURFACE }}>
+        <div className="hidden md:flex w-72 lg:w-80 shrink-0 flex-col border-l" style={{ borderColor: '#26262c', backgroundColor: SURFACE }}>
           <div className="px-4 py-3 border-b flex items-center justify-between" style={{ borderColor: '#26262c' }}>
             <span className="text-white text-sm font-semibold">Stream Chat</span>
           </div>

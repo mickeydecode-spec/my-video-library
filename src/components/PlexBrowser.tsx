@@ -32,7 +32,7 @@ function PlexHero({ video, onPlay, watchHistory }: {
   }, [video.url, thumb]);
 
   return (
-    <div className="relative w-full h-[45vh] overflow-hidden">
+    <div className="relative w-full h-[30vh] sm:h-[38vh] md:h-[45vh] overflow-hidden">
       {thumb ? (
         <img src={thumb} alt={video.name} className="absolute inset-0 w-full h-full object-cover" style={{ filter: 'blur(8px) brightness(0.4)', transform: 'scale(1.1)' }} />
       ) : (
@@ -41,28 +41,28 @@ function PlexHero({ video, onPlay, watchHistory }: {
       <div className="absolute inset-0 bg-gradient-to-t from-[#1f2326] via-[#1f2326]/60 to-transparent" />
       <div className="absolute inset-0 bg-gradient-to-r from-[#1f2326]/80 via-transparent to-transparent" />
 
-      <div className="absolute bottom-10 left-14 max-w-lg z-10">
-        <div className="flex items-center gap-2 mb-2">
-          <Star className="h-4 w-4" style={{ color: ORANGE, fill: ORANGE }} />
-          <span className="text-white/50 text-xs">Featured</span>
+      <div className="absolute bottom-6 sm:bottom-8 md:bottom-10 left-4 sm:left-8 md:left-14 max-w-[85%] sm:max-w-lg z-10">
+        <div className="flex items-center gap-2 mb-1 sm:mb-2">
+          <Star className="h-3.5 w-3.5 sm:h-4 sm:w-4" style={{ color: ORANGE, fill: ORANGE }} />
+          <span className="text-white/50 text-[10px] sm:text-xs">Featured</span>
         </div>
-        <h1 className="text-3xl font-bold text-white mb-1">{video.name.replace(/\.[^/.]+$/, '')}</h1>
-        <p className="text-sm text-white/40 mb-1">
+        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-0.5 sm:mb-1 line-clamp-2">{video.name.replace(/\.[^/.]+$/, '')}</h1>
+        <p className="text-xs sm:text-sm text-white/40 mb-1">
           {video.folder.split('/').pop()}
           {video.format && <span className="ml-2 uppercase">{video.format}</span>}
-          {video.size > 0 && <span className="ml-2">{(video.size / (1024 * 1024)).toFixed(0)} MB</span>}
+          {video.size > 0 && <span className="ml-2 hidden sm:inline">{(video.size / (1024 * 1024)).toFixed(0)} MB</span>}
         </p>
         {resumePct > 0 && resumePct < 95 && (
-          <div className="w-48 h-1 bg-white/10 rounded-full mt-2 mb-3">
+          <div className="w-32 sm:w-48 h-1 bg-white/10 rounded-full mt-1 sm:mt-2 mb-2 sm:mb-3">
             <div className="h-full rounded-full" style={{ width: `${resumePct}%`, backgroundColor: ORANGE }} />
           </div>
         )}
         <button
           onClick={() => onPlay(video)}
-          className="flex items-center gap-2 px-6 py-2.5 text-black font-semibold rounded-lg text-sm transition-all hover:brightness-110 mt-3"
+          className="flex items-center gap-1.5 sm:gap-2 px-4 sm:px-6 py-2 sm:py-2.5 text-black font-semibold rounded-lg text-xs sm:text-sm transition-all hover:brightness-110 mt-2 sm:mt-3"
           style={{ backgroundColor: ORANGE }}
         >
-          <Play className="h-4 w-4 fill-current" />
+          <Play className="h-3.5 w-3.5 sm:h-4 sm:w-4 fill-current" />
           {resumePct > 0 && resumePct < 95 ? 'Resume' : 'Play'}
         </button>
       </div>
@@ -98,7 +98,7 @@ function PlexCard({ video, onPlay, watchHistory }: {
   return (
     <div
       ref={cardRef}
-      className="shrink-0 w-[150px] cursor-pointer group"
+      className="shrink-0 w-[110px] sm:w-[130px] md:w-[150px] cursor-pointer group"
       onClick={() => onPlay(video)}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
@@ -114,12 +114,12 @@ function PlexCard({ video, onPlay, watchHistory }: {
           <img src={thumb} alt={video.name} className="w-full h-full object-cover" />
         ) : (
           <div className="w-full h-full flex items-center justify-center" style={{ backgroundColor: SURFACE }}>
-            <Film className="h-8 w-8 text-white/15" />
+            <Film className="h-6 w-6 sm:h-8 sm:w-8 text-white/15" />
           </div>
         )}
         {hovered && (
           <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-            <Play className="h-10 w-10 text-white fill-current drop-shadow-lg" />
+            <Play className="h-8 w-8 sm:h-10 sm:w-10 text-white fill-current drop-shadow-lg" />
           </div>
         )}
         {resumePct > 0 && resumePct < 95 && (
@@ -128,7 +128,7 @@ function PlexCard({ video, onPlay, watchHistory }: {
           </div>
         )}
       </div>
-      <p className="mt-1.5 text-xs text-white/70 truncate text-center">{video.name.replace(/\.[^/.]+$/, '')}</p>
+      <p className="mt-1 sm:mt-1.5 text-[10px] sm:text-xs text-white/70 truncate text-center">{video.name.replace(/\.[^/.]+$/, '')}</p>
     </div>
   );
 }
@@ -148,20 +148,20 @@ function LibraryRow({ title, videos, onPlay, watchHistory }: {
   };
 
   return (
-    <div className="relative mb-8" onMouseEnter={() => setShowArrows(true)} onMouseLeave={() => setShowArrows(false)}>
-      <h3 className="text-white font-semibold text-sm mb-3 px-1">{title}</h3>
+    <div className="relative mb-5 sm:mb-8" onMouseEnter={() => setShowArrows(true)} onMouseLeave={() => setShowArrows(false)}>
+      <h3 className="text-white font-semibold text-xs sm:text-sm mb-2 sm:mb-3 px-1">{title}</h3>
       <div className="relative">
         {showArrows && (
           <>
-            <button onClick={() => scroll('left')} className="absolute left-0 top-0 bottom-8 w-8 z-20 flex items-center justify-center bg-black/50 hover:bg-black/70 rounded-r transition-colors">
+            <button onClick={() => scroll('left')} className="absolute left-0 top-0 bottom-8 w-8 z-20 hidden sm:flex items-center justify-center bg-black/50 hover:bg-black/70 rounded-r transition-colors">
               <ChevronLeft className="h-5 w-5 text-white" />
             </button>
-            <button onClick={() => scroll('right')} className="absolute right-0 top-0 bottom-8 w-8 z-20 flex items-center justify-center bg-black/50 hover:bg-black/70 rounded-l transition-colors">
+            <button onClick={() => scroll('right')} className="absolute right-0 top-0 bottom-8 w-8 z-20 hidden sm:flex items-center justify-center bg-black/50 hover:bg-black/70 rounded-l transition-colors">
               <ChevronRight className="h-5 w-5 text-white" />
             </button>
           </>
         )}
-        <div ref={scrollRef} className="flex gap-3 overflow-x-scroll scroll-smooth" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+        <div ref={scrollRef} className="flex gap-2 sm:gap-3 overflow-x-scroll scroll-smooth" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
           {videos.map(v => <PlexCard key={v.id} video={v} onPlay={onPlay} watchHistory={watchHistory} />)}
         </div>
       </div>
@@ -194,7 +194,6 @@ export function PlexBrowser({ videos, onPlay, onExit, watchHistory = {}, noteCou
   const folders = useMemo(() => Array.from(new Set(videos.map(v => v.folder.split('/').pop() || 'All'))), [videos]);
   const heroVideo = videos[0];
 
-  // Continue watching
   const resumeVideos = useMemo(() =>
     videos.filter(v => { const e = watchHistory[v.path]; return e && e.duration > 0 && (e.position / e.duration) > 0.02 && (e.position / e.duration) < 0.95; }),
     [videos, watchHistory]
@@ -203,16 +202,16 @@ export function PlexBrowser({ videos, onPlay, onExit, watchHistory = {}, noteCou
   if (videos.length === 0) {
     return (
       <div className="fixed inset-0 flex items-center justify-center z-50" style={{ backgroundColor: BG }}>
-        <p className="text-white/50 text-lg">No videos. Open a folder to get started.</p>
-        <button onClick={onExit} className="absolute top-6 right-6 text-white/70 hover:text-white"><X className="h-6 w-6" /></button>
+        <p className="text-white/50 text-sm sm:text-lg">No videos. Open a folder to get started.</p>
+        <button onClick={onExit} className="absolute top-4 right-4 sm:top-6 sm:right-6 text-white/70 hover:text-white"><X className="h-5 w-5 sm:h-6 sm:w-6" /></button>
       </div>
     );
   }
 
   return (
     <div className="fixed inset-0 z-50 flex" style={{ backgroundColor: BG }}>
-      {/* Sidebar */}
-      <div className="w-14 lg:w-52 shrink-0 flex flex-col border-r overflow-y-auto" style={{ borderColor: '#2a2d31', backgroundColor: SIDEBAR_BG, scrollbarWidth: 'none' }}>
+      {/* Sidebar - hidden on mobile */}
+      <div className="hidden md:flex w-14 lg:w-52 shrink-0 flex-col border-r overflow-y-auto" style={{ borderColor: '#2a2d31', backgroundColor: SIDEBAR_BG, scrollbarWidth: 'none' }}>
         <div className="p-3 flex items-center gap-2 mb-2">
           <div className="w-7 h-7 rounded flex items-center justify-center" style={{ backgroundColor: ORANGE }}>
             <Play className="h-3.5 w-3.5 text-black fill-current" />
@@ -233,14 +232,17 @@ export function PlexBrowser({ videos, onPlay, onExit, watchHistory = {}, noteCou
       {/* Main */}
       <div ref={containerRef} className="flex-1 overflow-y-auto" style={{ scrollbarWidth: 'none' }}>
         {/* Top nav */}
-        <div className="sticky top-0 z-40 flex items-center justify-between px-6 py-2.5 transition-colors duration-300" style={{ backgroundColor: scrolled ? SIDEBAR_BG : 'transparent' }}>
-          <div className="flex items-center gap-4">
-            <span className="text-sm font-medium" style={{ color: ORANGE }}>Home</span>
-            <span className="text-white/50 text-sm font-medium hover:text-white cursor-pointer transition-colors">Movies</span>
-            <span className="text-white/50 text-sm font-medium hover:text-white cursor-pointer transition-colors">TV Shows</span>
+        <div className="sticky top-0 z-40 flex items-center justify-between px-3 sm:px-4 md:px-6 py-2 sm:py-2.5 transition-colors duration-300" style={{ backgroundColor: scrolled ? SIDEBAR_BG : 'transparent' }}>
+          <div className="flex items-center gap-2 sm:gap-4">
+            <div className="flex md:hidden w-6 h-6 rounded items-center justify-center" style={{ backgroundColor: ORANGE }}>
+              <Play className="h-3 w-3 text-black fill-current" />
+            </div>
+            <span className="text-xs sm:text-sm font-medium" style={{ color: ORANGE }}>Home</span>
+            <span className="text-white/50 text-xs sm:text-sm font-medium hover:text-white cursor-pointer transition-colors">Movies</span>
+            <span className="text-white/50 text-xs sm:text-sm font-medium hover:text-white cursor-pointer transition-colors hidden sm:block">TV Shows</span>
           </div>
           <button onClick={onExit} className="text-white/40 hover:text-white text-xs flex items-center gap-1 transition-colors">
-            <X className="h-4 w-4" /> Exit
+            <X className="h-4 w-4" /> <span className="hidden sm:inline">Exit</span>
           </button>
         </div>
 
@@ -248,7 +250,7 @@ export function PlexBrowser({ videos, onPlay, onExit, watchHistory = {}, noteCou
         <PlexHero video={heroVideo} onPlay={onPlay} watchHistory={watchHistory} />
 
         {/* Rows */}
-        <div className="px-6 pt-4 pb-20">
+        <div className="px-3 sm:px-4 md:px-6 pt-3 sm:pt-4 pb-20">
           {resumeVideos.length > 0 && (
             <LibraryRow title="Continue Watching" videos={resumeVideos} onPlay={onPlay} watchHistory={watchHistory} />
           )}
