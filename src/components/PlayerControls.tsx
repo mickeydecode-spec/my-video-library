@@ -297,9 +297,9 @@ export function PlayerControls({ videoRef, onPrev, onNext, onStop }: PlayerContr
     <div className="flex flex-col select-none bg-black/90 border-t border-white/10">
       {/* Seekbar - VLC style thin bar */}
       <div className="px-1 pt-1">
-        <div className="flex items-center gap-2 text-xs" style={{ color: '#333' }}>
+        <div className="flex items-center gap-2 text-xs text-white/70">
           <button
-            className="font-mono text-[11px] min-w-[45px] hover:text-[#ff6600] transition-colors bg-transparent border-none cursor-pointer p-0 text-left"
+            className="font-mono text-[11px] min-w-[45px] hover:text-primary transition-colors bg-transparent border-none cursor-pointer p-0 text-left text-white/70"
             onClick={() => setShowRemaining(!showRemaining)}
             title="Toggle elapsed/remaining"
           >
