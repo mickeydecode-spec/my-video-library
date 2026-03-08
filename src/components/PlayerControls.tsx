@@ -309,7 +309,6 @@ export function PlayerControls({ videoRef, onPrev, onNext, onStop }: PlayerContr
             ref={seekbarRef}
             className="flex-1 h-[6px] rounded-sm cursor-pointer relative group/seek bg-white/20"
             onClick={handleSeekbarClick}
-            onClick={handleSeekbarClick}
             onMouseMove={handleSeekbarHover}
             onMouseLeave={() => setHoverTime(null)}
           >
@@ -319,8 +318,8 @@ export function PlayerControls({ videoRef, onPrev, onNext, onStop }: PlayerContr
               style={{ width: `${buffered}%`, background: 'rgba(255,255,255,0.15)' }}
             />
             <div
-              className="absolute top-0 left-0 h-full rounded-sm"
-              style={{ width: `${progress}%` }} className="absolute top-0 left-0 h-full rounded-sm bg-primary"
+              className="absolute top-0 left-0 h-full rounded-sm bg-primary"
+              style={{ width: `${progress}%` }}
             />
             <div
               className="absolute top-1/2 -translate-y-1/2 h-3 w-3 rounded-full border border-white/30 bg-primary"
