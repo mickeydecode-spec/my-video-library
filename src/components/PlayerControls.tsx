@@ -294,12 +294,12 @@ export function PlayerControls({ videoRef, onPrev, onNext, onStop }: PlayerContr
   }, [videoRef, speed, changeSpeed, toggleAbLoop, takeScreenshot, togglePlay, toggleFullscreen, toggleMute]);
 
   return (
-    <div className="flex flex-col select-none" style={{ background: '#e8e8e8', borderTop: '1px solid #c8c8c8' }}>
+    <div className="flex flex-col select-none bg-black/90 border-t border-white/10">
       {/* Seekbar - VLC style thin bar */}
       <div className="px-1 pt-1">
-        <div className="flex items-center gap-2 text-xs" style={{ color: '#333' }}>
+        <div className="flex items-center gap-2 text-xs text-white/70">
           <button
-            className="font-mono text-[11px] min-w-[45px] hover:text-[#ff6600] transition-colors bg-transparent border-none cursor-pointer p-0 text-left"
+            className="font-mono text-[11px] min-w-[45px] hover:text-primary transition-colors bg-transparent border-none cursor-pointer p-0 text-left text-white/70"
             onClick={() => setShowRemaining(!showRemaining)}
             title="Toggle elapsed/remaining"
           >
@@ -307,8 +307,7 @@ export function PlayerControls({ videoRef, onPrev, onNext, onStop }: PlayerContr
           </button>
           <div
             ref={seekbarRef}
-            className="flex-1 h-[6px] rounded-sm cursor-pointer relative group/seek"
-            style={{ background: '#c0c0c0' }}
+            className="flex-1 h-[6px] rounded-sm cursor-pointer relative group/seek bg-white/20"
             onClick={handleSeekbarClick}
             onMouseMove={handleSeekbarHover}
             onMouseLeave={() => setHoverTime(null)}
@@ -316,15 +315,15 @@ export function PlayerControls({ videoRef, onPrev, onNext, onStop }: PlayerContr
             {/* Buffered range */}
             <div
               className="absolute top-0 left-0 h-full rounded-sm"
-              style={{ width: `${buffered}%`, background: '#a0a0a0' }}
+              style={{ width: `${buffered}%`, background: 'rgba(255,255,255,0.15)' }}
             />
             <div
-              className="absolute top-0 left-0 h-full rounded-sm"
-              style={{ width: `${progress}%`, background: '#ff6600' }}
+              className="absolute top-0 left-0 h-full rounded-sm bg-primary"
+              style={{ width: `${progress}%` }}
             />
             <div
-              className="absolute top-1/2 -translate-y-1/2 h-3 w-3 rounded-full border border-[#999]"
-              style={{ left: `calc(${progress}% - 6px)`, background: '#ff6600' }}
+              className="absolute top-1/2 -translate-y-1/2 h-3 w-3 rounded-full border border-white/30 bg-primary"
+              style={{ left: `calc(${progress}% - 6px)` }}
             />
             {/* Hover time tooltip */}
             {hoverTime !== null && (
@@ -336,7 +335,7 @@ export function PlayerControls({ videoRef, onPrev, onNext, onStop }: PlayerContr
               </div>
             )}
           </div>
-          <span className="font-mono text-[11px] min-w-[45px] text-right">{formatTime(duration)}</span>
+          <span className="font-mono text-[11px] min-w-[45px] text-right text-white/70">{formatTime(duration)}</span>
         </div>
       </div>
 
@@ -345,43 +344,43 @@ export function PlayerControls({ videoRef, onPrev, onNext, onStop }: PlayerContr
         {/* Play / Pause */}
         <button
           onClick={togglePlay}
-          className="p-1.5 rounded hover:bg-black/10 transition-colors"
+          className="p-1.5 rounded hover:bg-white/10 transition-colors"
           title={isPlaying ? 'Pause' : 'Play'}
         >
           {isPlaying
-            ? <Pause className="h-4 w-4" style={{ color: '#333' }} />
-            : <Play className="h-4 w-4" style={{ color: '#333' }} />
+            ? <Pause className="h-4 w-4 text-white/80" />
+            : <Play className="h-4 w-4 text-white/80" />
           }
         </button>
 
         {/* Previous */}
-        <button onClick={onPrev} className="p-1.5 rounded hover:bg-black/10 transition-colors" title="Previous">
-          <SkipBack className="h-3.5 w-3.5" style={{ color: '#333' }} />
+        <button onClick={onPrev} className="p-1.5 rounded hover:bg-white/10 transition-colors" title="Previous">
+          <SkipBack className="h-3.5 w-3.5 text-white/80" />
         </button>
 
         {/* Stop */}
-        <button onClick={onStop} className="p-1.5 rounded hover:bg-black/10 transition-colors" title="Stop">
-          <Square className="h-3.5 w-3.5" style={{ color: '#333' }} />
+        <button onClick={onStop} className="p-1.5 rounded hover:bg-white/10 transition-colors" title="Stop">
+          <Square className="h-3.5 w-3.5 text-white/80" />
         </button>
 
         {/* Next */}
-        <button onClick={onNext} className="p-1.5 rounded hover:bg-black/10 transition-colors" title="Next">
-          <SkipForward className="h-3.5 w-3.5" style={{ color: '#333' }} />
+        <button onClick={onNext} className="p-1.5 rounded hover:bg-white/10 transition-colors" title="Next">
+          <SkipForward className="h-3.5 w-3.5 text-white/80" />
         </button>
 
         {/* Fullscreen */}
-        <button onClick={toggleFullscreen} className="p-1.5 rounded hover:bg-black/10 transition-colors" title="Fullscreen (F)">
-          <Maximize className="h-3.5 w-3.5" style={{ color: '#333' }} />
+        <button onClick={toggleFullscreen} className="p-1.5 rounded hover:bg-white/10 transition-colors" title="Fullscreen (F)">
+          <Maximize className="h-3.5 w-3.5 text-white/80" />
         </button>
 
         {/* Playlist / Extended controls separator */}
-        <div className="flex items-center gap-0.5 ml-1 border-l pl-1" style={{ borderColor: '#bbb' }}>
+        <div className="flex items-center gap-0.5 ml-1 border-l pl-1 border-white/20">
           {/* A-B Loop */}
           <button
             onClick={toggleAbLoop}
-            className="p-1.5 rounded hover:bg-black/10 transition-colors"
+            className="p-1.5 rounded hover:bg-white/10 transition-colors"
             title="A-B Loop (L)"
-            style={{ color: abLoop.a !== null ? '#ff6600' : '#333' }}
+            style={{ color: abLoop.a !== null ? 'hsl(var(--primary))' : 'rgba(255,255,255,0.8)' }}
           >
             <Repeat className="h-3.5 w-3.5" />
           </button>
@@ -389,23 +388,23 @@ export function PlayerControls({ videoRef, onPrev, onNext, onStop }: PlayerContr
           {/* Shuffle */}
           <button
             onClick={() => setIsShuffled(!isShuffled)}
-            className="p-1.5 rounded hover:bg-black/10 transition-colors"
+            className="p-1.5 rounded hover:bg-white/10 transition-colors"
             title="Shuffle"
-            style={{ color: isShuffled ? '#ff6600' : '#333' }}
+            style={{ color: isShuffled ? 'hsl(var(--primary))' : 'rgba(255,255,255,0.8)' }}
           >
             <Shuffle className="h-3.5 w-3.5" />
           </button>
 
           {/* Screenshot */}
-          <button onClick={takeScreenshot} className="p-1.5 rounded hover:bg-black/10 transition-colors" title="Screenshot (Ctrl+S)">
-            <Camera className="h-3.5 w-3.5" style={{ color: '#333' }} />
+          <button onClick={takeScreenshot} className="p-1.5 rounded hover:bg-white/10 transition-colors" title="Screenshot (Ctrl+S)">
+            <Camera className="h-3.5 w-3.5 text-white/80" />
           </button>
         </div>
 
         {/* Speed popover */}
         <Popover>
           <PopoverTrigger asChild>
-            <button className="p-1.5 rounded hover:bg-black/10 transition-colors text-[11px] font-mono ml-1" style={{ color: speed !== 1 ? '#ff6600' : '#333' }}>
+            <button className="p-1.5 rounded hover:bg-white/10 transition-colors text-[11px] font-mono ml-1" style={{ color: speed !== 1 ? 'hsl(var(--primary))' : 'rgba(255,255,255,0.8)' }}>
               {speed}x
             </button>
           </PopoverTrigger>
@@ -424,8 +423,8 @@ export function PlayerControls({ videoRef, onPrev, onNext, onStop }: PlayerContr
         {/* Aspect Ratio */}
         <Popover>
           <PopoverTrigger asChild>
-            <button className="p-1.5 rounded hover:bg-black/10 transition-colors" title="Aspect Ratio">
-              <RatioIcon className="h-3.5 w-3.5" style={{ color: '#333' }} />
+            <button className="p-1.5 rounded hover:bg-white/10 transition-colors" title="Aspect Ratio">
+              <RatioIcon className="h-3.5 w-3.5 text-white/80" />
             </button>
           </PopoverTrigger>
           <PopoverContent className="w-36 p-2" side="top">
@@ -442,8 +441,8 @@ export function PlayerControls({ videoRef, onPrev, onNext, onStop }: PlayerContr
         {audioTracks.length > 1 && (
           <Popover>
             <PopoverTrigger asChild>
-              <button className="p-1.5 rounded hover:bg-black/10 transition-colors" title="Audio Track">
-                <Languages className="h-3.5 w-3.5" style={{ color: '#333' }} />
+              <button className="p-1.5 rounded hover:bg-white/10 transition-colors" title="Audio Track">
+                <Languages className="h-3.5 w-3.5 text-white/80" />
               </button>
             </PopoverTrigger>
             <PopoverContent className="w-48 p-2" side="top">
@@ -460,8 +459,8 @@ export function PlayerControls({ videoRef, onPrev, onNext, onStop }: PlayerContr
         {/* Subtitle size */}
         <Popover>
           <PopoverTrigger asChild>
-            <button className="p-1.5 rounded hover:bg-black/10 transition-colors" title="Subtitle Size">
-              <Type className="h-3.5 w-3.5" style={{ color: '#333' }} />
+            <button className="p-1.5 rounded hover:bg-white/10 transition-colors" title="Subtitle Size">
+              <Type className="h-3.5 w-3.5 text-white/80" />
             </button>
           </PopoverTrigger>
           <PopoverContent className="w-48 p-3" side="top">
@@ -476,8 +475,8 @@ export function PlayerControls({ videoRef, onPrev, onNext, onStop }: PlayerContr
 
         {/* Volume - VLC style: icon + horizontal slider + percentage */}
         <div className="flex items-center gap-1 mr-1">
-          <button onClick={toggleMute} className="p-1 rounded hover:bg-black/10 transition-colors" title="Mute (M)">
-            <VolumeIcon className="h-3.5 w-3.5" style={{ color: '#333' }} />
+          <button onClick={toggleMute} className="p-1 rounded hover:bg-white/10 transition-colors" title="Mute (M)">
+            <VolumeIcon className="h-3.5 w-3.5 text-white/80" />
           </button>
           <div className="w-20">
             <Slider
@@ -497,7 +496,7 @@ export function PlayerControls({ videoRef, onPrev, onNext, onStop }: PlayerContr
               }}
             />
           </div>
-          <span className="text-[11px] font-mono min-w-[35px] text-right" style={{ color: '#333' }}>
+          <span className="text-[11px] font-mono min-w-[35px] text-right text-white/70">
             {isMuted ? 0 : volumeBoost > 100 ? volumeBoost : volume}%
           </span>
         </div>

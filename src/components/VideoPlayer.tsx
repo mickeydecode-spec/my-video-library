@@ -188,9 +188,9 @@ export function VideoPlayer({
           pointerEvents: controlsVisible ? 'auto' : 'none',
         }}
       >
-        <Menubar className="rounded-none border-0 border-b px-1 h-7" style={{ background: '#e8e8e8', borderColor: '#c8c8c8' }}>
+      <Menubar className="rounded-none border-0 border-b px-1 h-7 bg-black/90 border-white/10">
           <MenubarMenu>
-            <MenubarTrigger className="text-xs px-2 py-0.5 h-6 font-normal" style={{ color: '#333' }}>Media</MenubarTrigger>
+            <MenubarTrigger className="text-xs px-2 py-0.5 h-6 font-normal text-white/80 hover:text-white">Media</MenubarTrigger>
             <MenubarContent>
               <MenubarItem onClick={onClose}>Close <MenubarShortcut>Ctrl+W</MenubarShortcut></MenubarItem>
               <MenubarSeparator />
@@ -198,7 +198,7 @@ export function VideoPlayer({
             </MenubarContent>
           </MenubarMenu>
           <MenubarMenu>
-            <MenubarTrigger className="text-xs px-2 py-0.5 h-6 font-normal" style={{ color: '#333' }}>Playback</MenubarTrigger>
+            <MenubarTrigger className="text-xs px-2 py-0.5 h-6 font-normal text-white/80 hover:text-white">Playback</MenubarTrigger>
             <MenubarContent>
               <MenubarItem onClick={onPrev}>Previous <MenubarShortcut>P</MenubarShortcut></MenubarItem>
               <MenubarItem onClick={onNext}>Next <MenubarShortcut>N</MenubarShortcut></MenubarItem>
@@ -213,7 +213,7 @@ export function VideoPlayer({
             </MenubarContent>
           </MenubarMenu>
           <MenubarMenu>
-            <MenubarTrigger className="text-xs px-2 py-0.5 h-6 font-normal" style={{ color: '#333' }}>Audio</MenubarTrigger>
+            <MenubarTrigger className="text-xs px-2 py-0.5 h-6 font-normal text-white/80 hover:text-white">Audio</MenubarTrigger>
             <MenubarContent>
               <MenubarItem onClick={() => { if (videoRef.current) videoRef.current.muted = !videoRef.current.muted; }}>
                 Mute <MenubarShortcut>M</MenubarShortcut>
@@ -223,7 +223,7 @@ export function VideoPlayer({
             </MenubarContent>
           </MenubarMenu>
           <MenubarMenu>
-            <MenubarTrigger className="text-xs px-2 py-0.5 h-6 font-normal" style={{ color: '#333' }}>Video</MenubarTrigger>
+            <MenubarTrigger className="text-xs px-2 py-0.5 h-6 font-normal text-white/80 hover:text-white">Video</MenubarTrigger>
             <MenubarContent>
               <MenubarItem onClick={() => {
                 if (document.fullscreenElement) document.exitFullscreen();
@@ -237,7 +237,7 @@ export function VideoPlayer({
             </MenubarContent>
           </MenubarMenu>
           <MenubarMenu>
-            <MenubarTrigger className="text-xs px-2 py-0.5 h-6 font-normal" style={{ color: '#333' }}>Subtitle</MenubarTrigger>
+            <MenubarTrigger className="text-xs px-2 py-0.5 h-6 font-normal text-white/80 hover:text-white">Subtitle</MenubarTrigger>
             <MenubarContent>
               {video.subtitleFiles.length > 0
                 ? video.subtitleFiles.map((s, i) => (
@@ -248,7 +248,7 @@ export function VideoPlayer({
             </MenubarContent>
           </MenubarMenu>
           <MenubarMenu>
-            <MenubarTrigger className="text-xs px-2 py-0.5 h-6 font-normal" style={{ color: '#333' }}>Tools</MenubarTrigger>
+            <MenubarTrigger className="text-xs px-2 py-0.5 h-6 font-normal text-white/80 hover:text-white">Tools</MenubarTrigger>
             <MenubarContent>
               <MenubarItem onClick={() => setNotesOpen(!notesOpen)}>Notes & Bookmarks</MenubarItem>
               <MenubarSeparator />
@@ -259,18 +259,18 @@ export function VideoPlayer({
             </MenubarContent>
           </MenubarMenu>
           <MenubarMenu>
-            <MenubarTrigger className="text-xs px-2 py-0.5 h-6 font-normal" style={{ color: '#333' }}>View</MenubarTrigger>
+            <MenubarTrigger className="text-xs px-2 py-0.5 h-6 font-normal text-white/80 hover:text-white">View</MenubarTrigger>
             <MenubarContent>
               <MenubarItem onClick={onMinimize}>Mini Player</MenubarItem>
             </MenubarContent>
           </MenubarMenu>
 
           <div className="flex-1" />
-          <button onClick={() => setNotesOpen(!notesOpen)} className="p-1 rounded hover:bg-black/10 transition-colors mr-1" title="Notes & Bookmarks">
-            <Bookmark className="h-3.5 w-3.5" style={{ color: '#555' }} />
+          <button onClick={() => setNotesOpen(!notesOpen)} className="p-1 rounded hover:bg-white/10 transition-colors mr-1" title="Notes & Bookmarks">
+            <Bookmark className="h-3.5 w-3.5 text-white/60" />
           </button>
-          <button onClick={onClose} className="p-1 rounded hover:bg-black/10 transition-colors" title="Close">
-            <X className="h-3.5 w-3.5" style={{ color: '#555' }} />
+          <button onClick={onClose} className="p-1 rounded hover:bg-white/10 transition-colors" title="Close">
+            <X className="h-3.5 w-3.5 text-white/60" />
           </button>
         </Menubar>
       </div>
@@ -310,9 +310,9 @@ export function VideoPlayer({
               onNext={onNext}
               onStop={handleStop}
             />
-            <div className="px-2 py-1" style={{ background: '#e0e0e0', borderTop: '1px solid #c8c8c8' }}>
+            <div className="px-2 py-1 bg-black/90 border-t border-white/10">
               <div className="flex items-center gap-2">
-                <span className="text-[11px] font-medium truncate" style={{ color: '#333' }}>{video.name}</span>
+                <span className="text-[11px] font-medium truncate text-white/80">{video.name}</span>
                 <div className="flex-1" />
                 <TagEditor tags={tags} allTags={allTags} onAddTag={onAddTag} onRemoveTag={onRemoveTag} />
               </div>
