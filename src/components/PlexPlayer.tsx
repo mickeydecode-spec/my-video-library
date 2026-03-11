@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { VideoFile } from '@/lib/fileScanner';
+import { usePlayerSubtitles } from '@/hooks/usePlayerSubtitles';
 import {
   ArrowLeft, Play, Pause, SkipForward, SkipBack,
-  Volume2, VolumeX, Maximize, Minimize, Subtitles
+  Volume2, VolumeX, Maximize, Minimize, Subtitles, Languages
 } from 'lucide-react';
 
 interface PlexPlayerProps {
@@ -42,6 +43,13 @@ export function PlexPlayer({ video, onBack, onNext, onPrev, resumePosition, onPo
   const [hoverX, setHoverX] = useState(0);
   const [speed, setSpeed] = useState(1);
   const [showSpeed, setShowSpeed] = useState(false);
+  const [showSubMenu, setShowSubMenu] = useState(false);
+  const [showAudioMenu, setShowAudioMenu] = useState(false);
+
+  const {
+    subtitleTracks, activeSubtitle, setActiveSubtitle,
+    audioTracks, activeAudioTrack, setActiveAudioTrack,
+  } = usePlayerSubtitles(video, videoRef);
 
   const resetHideTimer = useCallback(() => {
     setShowControls(true);
@@ -134,7 +142,12 @@ export function PlexPlayer({ video, onBack, onNext, onPrev, resumePosition, onPo
       onMouseMove={resetHideTimer}
       onClick={togglePlay}
     >
-      <video ref={videoRef} src={video.url} muted={muted} className="w-full h-full object-contain" playsInline />
+      <video ref={videoRef} muted={muted} className="w-full h-full object-contain" playsInline>
+        <source src={video.url} />
+        {subtitleTracks.map((s) => (
+          <track key={s.index} kind="subtitles" src={s.url} srcLang={s.language} label={s.language} />
+        ))}
+      </video>
 
       {/* Top bar */}
       <div
@@ -155,7 +168,6 @@ export function PlexPlayer({ video, onBack, onNext, onPrev, resumePosition, onPo
         className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent px-3 sm:px-6 pb-4 sm:pb-5 pt-10 sm:pt-14 transition-opacity duration-500 ${showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
         onClick={e => e.stopPropagation()}
       >
-        {/* Progress */}
         <div
           ref={progressRef}
           className="relative w-full h-1.5 sm:h-1 bg-white/15 rounded-full cursor-pointer group mb-3 sm:mb-4 hover:h-2 transition-all"
@@ -176,15 +188,11 @@ export function PlexPlayer({ video, onBack, onNext, onPrev, resumePosition, onPo
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 sm:gap-4">
             {onPrev && <button onClick={onPrev} className="text-white/60 hover:text-white hidden sm:block"><SkipBack className="h-5 w-5" /></button>}
-            <button onClick={() => skip(-10)} className="text-white/60 hover:text-white text-[10px] sm:text-xs font-medium rounded-full w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center bg-white/10 hover:bg-white/20 transition-colors">
-              10
-            </button>
+            <button onClick={() => skip(-10)} className="text-white/60 hover:text-white text-[10px] sm:text-xs font-medium rounded-full w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center bg-white/10 hover:bg-white/20 transition-colors">10</button>
             <button onClick={togglePlay} className="text-white hover:text-white/80 w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors">
               {playing ? <Pause className="h-4 w-4 sm:h-5 sm:w-5" /> : <Play className="h-4 w-4 sm:h-5 sm:w-5 fill-current" />}
             </button>
-            <button onClick={() => skip(10)} className="text-white/60 hover:text-white text-[10px] sm:text-xs font-medium rounded-full w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center bg-white/10 hover:bg-white/20 transition-colors">
-              10
-            </button>
+            <button onClick={() => skip(10)} className="text-white/60 hover:text-white text-[10px] sm:text-xs font-medium rounded-full w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center bg-white/10 hover:bg-white/20 transition-colors">10</button>
             {onNext && <button onClick={onNext} className="text-white/60 hover:text-white hidden sm:block"><SkipForward className="h-5 w-5" /></button>}
 
             <div className="hidden sm:flex items-center gap-2 group/vol">
@@ -199,8 +207,51 @@ export function PlexPlayer({ video, onBack, onNext, onPrev, resumePosition, onPo
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3">
+            {/* Subtitle picker */}
+            <div className="relative">
+              <button
+                onClick={() => { setShowSubMenu(!showSubMenu); setShowAudioMenu(false); setShowSpeed(false); }}
+                className="transition-colors"
+                style={{ color: activeSubtitle >= 0 ? ORANGE : 'rgba(255,255,255,0.6)' }}
+                title="Subtitles"
+              >
+                <Subtitles className="h-4 w-4 sm:h-5 sm:w-5" />
+              </button>
+              {showSubMenu && (
+                <div className="absolute bottom-full right-0 mb-2 rounded-lg py-1 shadow-xl min-w-[140px]" style={{ backgroundColor: BG }}>
+                  <button onClick={() => { setActiveSubtitle(-1); setShowSubMenu(false); }}
+                    className={`block w-full px-4 py-1.5 text-xs text-left hover:bg-white/10 ${activeSubtitle === -1 ? 'text-white' : 'text-white/50'}`}>Off</button>
+                  {subtitleTracks.map(s => (
+                    <button key={s.index} onClick={() => { setActiveSubtitle(s.index); setShowSubMenu(false); }}
+                      className={`block w-full px-4 py-1.5 text-xs text-left hover:bg-white/10 ${activeSubtitle === s.index ? 'text-white' : 'text-white/50'}`}>
+                      {s.language}
+                    </button>
+                  ))}
+                  {subtitleTracks.length === 0 && <span className="block px-4 py-1.5 text-xs text-white/30">No subtitles</span>}
+                </div>
+              )}
+            </div>
+
+            {/* Audio track picker */}
             <div className="relative hidden sm:block">
-              <button onClick={() => setShowSpeed(!showSpeed)} className="text-white/60 hover:text-white text-xs font-medium">{speed}x</button>
+              <button onClick={() => { setShowAudioMenu(!showAudioMenu); setShowSubMenu(false); setShowSpeed(false); }}
+                className="text-white/60 hover:text-white transition-colors" title="Audio Track">
+                <Languages className="h-4 w-4 sm:h-5 sm:w-5" />
+              </button>
+              {showAudioMenu && (
+                <div className="absolute bottom-full right-0 mb-2 rounded-lg py-1 shadow-xl min-w-[160px]" style={{ backgroundColor: BG }}>
+                  {audioTracks.length > 0 ? audioTracks.map(t => (
+                    <button key={t.index} onClick={() => { setActiveAudioTrack(t.index); setShowAudioMenu(false); }}
+                      className={`block w-full px-4 py-1.5 text-xs text-left hover:bg-white/10 ${t.index === activeAudioTrack ? 'text-white' : 'text-white/50'}`}>
+                      {t.label} ({t.language})
+                    </button>
+                  )) : <span className="block px-4 py-1.5 text-xs text-white/30">No extra audio tracks</span>}
+                </div>
+              )}
+            </div>
+
+            <div className="relative hidden sm:block">
+              <button onClick={() => { setShowSpeed(!showSpeed); setShowSubMenu(false); setShowAudioMenu(false); }} className="text-white/60 hover:text-white text-xs font-medium">{speed}x</button>
               {showSpeed && (
                 <div className="absolute bottom-full right-0 mb-2 rounded-lg py-1 shadow-xl" style={{ backgroundColor: BG }}>
                   {speeds.map(s => (
@@ -210,9 +261,6 @@ export function PlexPlayer({ video, onBack, onNext, onPrev, resumePosition, onPo
                 </div>
               )}
             </div>
-            {video.subtitleFiles.length > 0 && (
-              <button className="text-white/60 hover:text-white hidden sm:block"><Subtitles className="h-5 w-5" /></button>
-            )}
             <button onClick={toggleFullscreen} className="text-white/60 hover:text-white">
               {isFullscreen ? <Minimize className="h-4 w-4 sm:h-5 sm:w-5" /> : <Maximize className="h-4 w-4 sm:h-5 sm:w-5" />}
             </button>

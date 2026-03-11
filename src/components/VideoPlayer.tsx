@@ -1,11 +1,11 @@
 import { VideoFile } from '@/lib/fileScanner';
-import { loadSubtitleAsVtt } from '@/lib/fileScanner';
 import { Bookmark, X } from 'lucide-react';
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { NotesPanel } from '@/components/NotesPanel';
 import { TagEditor } from '@/components/TagEditor';
 import { PlayerControls } from '@/components/PlayerControls';
 import { VideoNote } from '@/hooks/useVideoNotes';
+import { usePlayerSubtitles } from '@/hooks/usePlayerSubtitles';
 import {
   Menubar,
   MenubarContent,
@@ -40,12 +40,16 @@ export function VideoPlayer({
   tags, allTags, onAddTag, onRemoveTag,
 }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [subtitleUrls, setSubtitleUrls] = useState<{ lang: string; url: string }[]>([]);
   const [notesOpen, setNotesOpen] = useState(false);
   const hasResumed = useRef(false);
   const [controlsVisible, setControlsVisible] = useState(true);
   const hideTimerRef = useRef<number | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
+
+  const {
+    subtitleTracks, activeSubtitle, setActiveSubtitle,
+    audioTracks, activeAudioTrack, setActiveAudioTrack,
+  } = usePlayerSubtitles(video, videoRef);
 
   // Auto-hide controls logic
   const resetHideTimer = useCallback(() => {
@@ -81,25 +85,11 @@ export function VideoPlayer({
   }, []);
 
   useEffect(() => {
-    async function loadSubs() {
-      const subs = await Promise.all(
-        video.subtitleFiles.map(async (sf) => {
-          const url = await loadSubtitleAsVtt(sf);
-          return { lang: sf.language, url };
-        })
-      );
-      setSubtitleUrls(subs);
-    }
-    loadSubs();
-    hasResumed.current = false;
-  }, [video]);
-
-  useEffect(() => {
     if (videoRef.current) {
       videoRef.current.load();
       videoRef.current.play().catch(() => {});
     }
-  }, [video.url, subtitleUrls]);
+  }, [video.url, subtitleTracks]);
 
   // Resume from saved position
   useEffect(() => {
@@ -113,7 +103,11 @@ export function VideoPlayer({
     };
     el.addEventListener('canplay', handleCanPlay);
     return () => el.removeEventListener('canplay', handleCanPlay);
-  }, [resumePosition, subtitleUrls]);
+  }, [resumePosition, subtitleTracks]);
+
+  useEffect(() => {
+    hasResumed.current = false;
+  }, [video]);
 
   // Save position periodically
   useEffect(() => {
@@ -219,7 +213,17 @@ export function VideoPlayer({
                 Mute <MenubarShortcut>M</MenubarShortcut>
               </MenubarItem>
               <MenubarSeparator />
-              <MenubarItem disabled className="text-xs text-muted-foreground">Audio tracks shown in controls below</MenubarItem>
+              {audioTracks.length > 0 ? (
+                audioTracks.map((t) => (
+                  <MenubarItem key={t.index} onClick={() => setActiveAudioTrack(t.index)}>
+                    {t.enabled ? '✓ ' : '  '}{t.label} ({t.language})
+                  </MenubarItem>
+                ))
+              ) : (
+                <MenubarItem disabled className="text-xs text-muted-foreground">
+                  No additional audio tracks detected
+                </MenubarItem>
+              )}
             </MenubarContent>
           </MenubarMenu>
           <MenubarMenu>
@@ -239,11 +243,17 @@ export function VideoPlayer({
           <MenubarMenu>
             <MenubarTrigger className="text-xs px-2 py-0.5 h-6 font-normal text-white/80 hover:text-white">Subtitle</MenubarTrigger>
             <MenubarContent>
-              {video.subtitleFiles.length > 0
-                ? video.subtitleFiles.map((s, i) => (
-                  <MenubarItem key={i}>{s.language} - {s.name}</MenubarItem>
+              <MenubarItem onClick={() => setActiveSubtitle(-1)}>
+                {activeSubtitle === -1 ? '✓ ' : '  '}Disable
+              </MenubarItem>
+              <MenubarSeparator />
+              {subtitleTracks.length > 0
+                ? subtitleTracks.map((s) => (
+                  <MenubarItem key={s.index} onClick={() => setActiveSubtitle(s.index)}>
+                    {activeSubtitle === s.index ? '✓ ' : '  '}{s.language}
+                  </MenubarItem>
                 ))
-                : <MenubarItem disabled>No subtitles</MenubarItem>
+                : <MenubarItem disabled>No subtitles found</MenubarItem>
               }
             </MenubarContent>
           </MenubarMenu>
@@ -289,8 +299,8 @@ export function VideoPlayer({
               onDoubleClick={handleDoubleClick}
             >
               <source src={video.url} />
-              {subtitleUrls.map((s, i) => (
-                <track key={i} kind="subtitles" src={s.url} srcLang={s.lang} label={s.lang} default={i === 0} />
+              {subtitleTracks.map((s) => (
+                <track key={s.index} kind="subtitles" src={s.url} srcLang={s.language} label={s.language} />
               ))}
             </video>
           </div>
@@ -309,6 +319,12 @@ export function VideoPlayer({
               onPrev={onPrev}
               onNext={onNext}
               onStop={handleStop}
+              subtitleTracks={subtitleTracks}
+              activeSubtitle={activeSubtitle}
+              onSetActiveSubtitle={setActiveSubtitle}
+              audioTracks={audioTracks}
+              activeAudioTrack={activeAudioTrack}
+              onSetActiveAudioTrack={setActiveAudioTrack}
             />
             <div className="px-2 py-1 bg-black/90 border-t border-white/10">
               <div className="flex items-center gap-2">
