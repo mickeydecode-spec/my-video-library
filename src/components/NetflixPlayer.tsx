@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { VideoFile } from '@/lib/fileScanner';
+import { usePlayerSubtitles } from '@/hooks/usePlayerSubtitles';
 import {
   ArrowLeft, Play, Pause, SkipForward, SkipBack,
-  Volume2, VolumeX, Maximize, Minimize, Settings
+  Volume2, VolumeX, Maximize, Minimize, Subtitles, Languages
 } from 'lucide-react';
 
 interface NetflixPlayerProps {
@@ -39,6 +40,13 @@ export function NetflixPlayer({ video, onBack, onNext, onPrev, resumePosition, o
   const [hoverX, setHoverX] = useState(0);
   const [speed, setSpeed] = useState(1);
   const [showSpeed, setShowSpeed] = useState(false);
+  const [showSubMenu, setShowSubMenu] = useState(false);
+  const [showAudioMenu, setShowAudioMenu] = useState(false);
+
+  const {
+    subtitleTracks, activeSubtitle, setActiveSubtitle,
+    audioTracks, activeAudioTrack, setActiveAudioTrack,
+  } = usePlayerSubtitles(video, videoRef);
 
   const resetHideTimer = useCallback(() => {
     setShowControls(true);
@@ -136,7 +144,12 @@ export function NetflixPlayer({ video, onBack, onNext, onPrev, resumePosition, o
       onClick={togglePlay}
       style={{ cursor: showControls ? 'default' : 'none' }}
     >
-      <video ref={videoRef} src={video.url} muted={muted} className="w-full h-full object-contain" playsInline />
+      <video ref={videoRef} muted={muted} className="w-full h-full object-contain" playsInline>
+        <source src={video.url} />
+        {subtitleTracks.map((s) => (
+          <track key={s.index} kind="subtitles" src={s.url} srcLang={s.language} label={s.language} />
+        ))}
+      </video>
 
       {/* Top bar */}
       <div
@@ -208,8 +221,66 @@ export function NetflixPlayer({ video, onBack, onNext, onPrev, resumePosition, o
           </div>
 
           <div className="flex items-center gap-2 sm:gap-4">
+            {/* Subtitle picker */}
+            <div className="relative">
+              <button
+                onClick={() => { setShowSubMenu(!showSubMenu); setShowAudioMenu(false); setShowSpeed(false); }}
+                className="transition-colors"
+                style={{ color: activeSubtitle >= 0 ? '#e50914' : 'rgba(255,255,255,0.7)' }}
+                title="Subtitles"
+              >
+                <Subtitles className="h-4 w-4 sm:h-5 sm:w-5" />
+              </button>
+              {showSubMenu && (
+                <div className="absolute bottom-full right-0 mb-2 bg-[#1a1a1a] rounded py-1 shadow-xl min-w-[140px]">
+                  <button
+                    onClick={() => { setActiveSubtitle(-1); setShowSubMenu(false); }}
+                    className={`block w-full px-4 py-1.5 text-xs text-left hover:bg-white/10 transition-colors ${activeSubtitle === -1 ? 'text-white' : 'text-white/60'}`}
+                  >
+                    Off
+                  </button>
+                  {subtitleTracks.map(s => (
+                    <button key={s.index}
+                      onClick={() => { setActiveSubtitle(s.index); setShowSubMenu(false); }}
+                      className={`block w-full px-4 py-1.5 text-xs text-left hover:bg-white/10 transition-colors ${activeSubtitle === s.index ? 'text-white' : 'text-white/60'}`}
+                    >
+                      {s.language}
+                    </button>
+                  ))}
+                  {subtitleTracks.length === 0 && (
+                    <span className="block px-4 py-1.5 text-xs text-white/30">No subtitles</span>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Audio track picker */}
             <div className="relative hidden sm:block">
-              <button onClick={() => setShowSpeed(!showSpeed)} className="text-white/70 hover:text-white transition-colors text-xs font-medium">{speed}x</button>
+              <button
+                onClick={() => { setShowAudioMenu(!showAudioMenu); setShowSubMenu(false); setShowSpeed(false); }}
+                className="text-white/70 hover:text-white transition-colors"
+                title="Audio Track"
+              >
+                <Languages className="h-4 w-4 sm:h-5 sm:w-5" />
+              </button>
+              {showAudioMenu && (
+                <div className="absolute bottom-full right-0 mb-2 bg-[#1a1a1a] rounded py-1 shadow-xl min-w-[160px]">
+                  {audioTracks.length > 0 ? audioTracks.map(t => (
+                    <button key={t.index}
+                      onClick={() => { setActiveAudioTrack(t.index); setShowAudioMenu(false); }}
+                      className={`block w-full px-4 py-1.5 text-xs text-left hover:bg-white/10 transition-colors ${t.index === activeAudioTrack ? 'text-white' : 'text-white/60'}`}
+                    >
+                      {t.label} ({t.language})
+                    </button>
+                  )) : (
+                    <span className="block px-4 py-1.5 text-xs text-white/30">No extra audio tracks</span>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="relative hidden sm:block">
+              <button onClick={() => { setShowSpeed(!showSpeed); setShowSubMenu(false); setShowAudioMenu(false); }} className="text-white/70 hover:text-white transition-colors text-xs font-medium">{speed}x</button>
               {showSpeed && (
                 <div className="absolute bottom-full right-0 mb-2 bg-[#1a1a1a] rounded py-1 shadow-xl">
                   {speeds.map(s => (

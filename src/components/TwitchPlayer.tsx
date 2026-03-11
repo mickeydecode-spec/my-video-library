@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { VideoFile } from '@/lib/fileScanner';
+import { usePlayerSubtitles } from '@/hooks/usePlayerSubtitles';
 import {
   ArrowLeft, Play, Pause, SkipForward, SkipBack,
-  Volume2, VolumeX, Maximize, Minimize, MessageSquare
+  Volume2, VolumeX, Maximize, Minimize, MessageSquare, Subtitles, Languages
 } from 'lucide-react';
 
 interface TwitchPlayerProps {
@@ -41,21 +42,23 @@ export function TwitchPlayer({ video, onBack, onNext, onPrev, resumePosition, on
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [hoverTime, setHoverTime] = useState<number | null>(null);
   const [hoverX, setHoverX] = useState(0);
-  const [showChat, setShowChat] = useState(false); // hidden by default on mobile
+  const [showChat, setShowChat] = useState(false);
   const [speed, setSpeed] = useState(1);
   const [showSpeed, setShowSpeed] = useState(false);
+  const [showSubMenu, setShowSubMenu] = useState(false);
+  const [showAudioMenu, setShowAudioMenu] = useState(false);
 
-  // Show chat by default on desktop
-  useEffect(() => {
-    setShowChat(window.innerWidth >= 768);
-  }, []);
+  const {
+    subtitleTracks, activeSubtitle, setActiveSubtitle,
+    audioTracks, activeAudioTrack, setActiveAudioTrack,
+  } = usePlayerSubtitles(video, videoRef);
+
+  useEffect(() => { setShowChat(window.innerWidth >= 768); }, []);
 
   const resetHideTimer = useCallback(() => {
     setShowControls(true);
     clearTimeout(hideTimerRef.current);
-    hideTimerRef.current = setTimeout(() => {
-      if (playing) setShowControls(false);
-    }, 3000);
+    hideTimerRef.current = setTimeout(() => { if (playing) setShowControls(false); }, 3000);
   }, [playing]);
 
   useEffect(() => { resetHideTimer(); return () => clearTimeout(hideTimerRef.current); }, [resetHideTimer]);
@@ -137,14 +140,18 @@ export function TwitchPlayer({ video, onBack, onNext, onPrev, resumePosition, on
 
   return (
     <div ref={containerRef} className="fixed inset-0 z-50 flex flex-col md:flex-row" style={{ backgroundColor: BG }}>
-      {/* Video area */}
       <div
         className="flex-1 relative select-none"
         onMouseMove={resetHideTimer}
         onClick={togglePlay}
         style={{ cursor: showControls ? 'default' : 'none' }}
       >
-        <video ref={videoRef} src={video.url} muted={muted} className="w-full h-full object-contain" playsInline />
+        <video ref={videoRef} muted={muted} className="w-full h-full object-contain" playsInline>
+          <source src={video.url} />
+          {subtitleTracks.map((s) => (
+            <track key={s.index} kind="subtitles" src={s.url} srcLang={s.language} label={s.language} />
+          ))}
+        </video>
 
         {/* Top bar */}
         <div
@@ -168,7 +175,6 @@ export function TwitchPlayer({ video, onBack, onNext, onPrev, resumePosition, on
           className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent px-3 sm:px-4 pb-3 sm:pb-4 pt-8 sm:pt-12 transition-opacity duration-500 ${showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
           onClick={e => e.stopPropagation()}
         >
-          {/* Progress */}
           <div
             ref={progressRef}
             className="relative w-full h-1.5 sm:h-1 bg-white/20 rounded-full cursor-pointer group mb-2 sm:mb-3 hover:h-2 transition-all"
@@ -208,8 +214,51 @@ export function TwitchPlayer({ video, onBack, onNext, onPrev, resumePosition, on
             </div>
 
             <div className="flex items-center gap-2 sm:gap-3">
+              {/* Subtitle picker */}
+              <div className="relative">
+                <button
+                  onClick={() => { setShowSubMenu(!showSubMenu); setShowAudioMenu(false); setShowSpeed(false); }}
+                  className="transition-colors"
+                  style={{ color: activeSubtitle >= 0 ? PURPLE : 'rgba(255,255,255,0.7)' }}
+                  title="Subtitles"
+                >
+                  <Subtitles className="h-4 w-4" />
+                </button>
+                {showSubMenu && (
+                  <div className="absolute bottom-full right-0 mb-2 rounded py-1 shadow-xl min-w-[140px]" style={{ backgroundColor: SURFACE }}>
+                    <button onClick={() => { setActiveSubtitle(-1); setShowSubMenu(false); }}
+                      className={`block w-full px-4 py-1.5 text-xs text-left hover:bg-white/10 ${activeSubtitle === -1 ? 'text-white' : 'text-white/60'}`}>Off</button>
+                    {subtitleTracks.map(s => (
+                      <button key={s.index} onClick={() => { setActiveSubtitle(s.index); setShowSubMenu(false); }}
+                        className={`block w-full px-4 py-1.5 text-xs text-left hover:bg-white/10 ${activeSubtitle === s.index ? 'text-white' : 'text-white/60'}`}>
+                        {s.language}
+                      </button>
+                    ))}
+                    {subtitleTracks.length === 0 && <span className="block px-4 py-1.5 text-xs text-white/30">No subtitles</span>}
+                  </div>
+                )}
+              </div>
+
+              {/* Audio track picker */}
               <div className="relative hidden sm:block">
-                <button onClick={() => setShowSpeed(!showSpeed)} className="text-white/70 hover:text-white text-xs font-medium">{speed}x</button>
+                <button onClick={() => { setShowAudioMenu(!showAudioMenu); setShowSubMenu(false); setShowSpeed(false); }}
+                  className="text-white/70 hover:text-white transition-colors" title="Audio Track">
+                  <Languages className="h-4 w-4" />
+                </button>
+                {showAudioMenu && (
+                  <div className="absolute bottom-full right-0 mb-2 rounded py-1 shadow-xl min-w-[160px]" style={{ backgroundColor: SURFACE }}>
+                    {audioTracks.length > 0 ? audioTracks.map(t => (
+                      <button key={t.index} onClick={() => { setActiveAudioTrack(t.index); setShowAudioMenu(false); }}
+                        className={`block w-full px-4 py-1.5 text-xs text-left hover:bg-white/10 ${t.index === activeAudioTrack ? 'text-white' : 'text-white/60'}`}>
+                        {t.label} ({t.language})
+                      </button>
+                    )) : <span className="block px-4 py-1.5 text-xs text-white/30">No extra audio tracks</span>}
+                  </div>
+                )}
+              </div>
+
+              <div className="relative hidden sm:block">
+                <button onClick={() => { setShowSpeed(!showSpeed); setShowSubMenu(false); setShowAudioMenu(false); }} className="text-white/70 hover:text-white text-xs font-medium">{speed}x</button>
                 {showSpeed && (
                   <div className="absolute bottom-full right-0 mb-2 rounded py-1 shadow-xl" style={{ backgroundColor: SURFACE }}>
                     {speeds.map(s => (
@@ -230,7 +279,7 @@ export function TwitchPlayer({ video, onBack, onNext, onPrev, resumePosition, on
         </div>
       </div>
 
-      {/* Chat panel - hidden on mobile */}
+      {/* Chat panel */}
       {showChat && (
         <div className="hidden md:flex w-72 lg:w-80 shrink-0 flex-col border-l" style={{ borderColor: '#26262c', backgroundColor: SURFACE }}>
           <div className="px-4 py-3 border-b flex items-center justify-between" style={{ borderColor: '#26262c' }}>
@@ -240,9 +289,7 @@ export function TwitchPlayer({ video, onBack, onNext, onPrev, resumePosition, on
             <p className="text-white/30 text-xs text-center">Chat is unavailable for local files</p>
           </div>
           <div className="px-3 py-3 border-t" style={{ borderColor: '#26262c' }}>
-            <div className="rounded px-3 py-2 text-xs text-white/30" style={{ backgroundColor: '#26262c' }}>
-              Send a message
-            </div>
+            <div className="rounded px-3 py-2 text-xs text-white/30" style={{ backgroundColor: '#26262c' }}>Send a message</div>
           </div>
         </div>
       )}

@@ -1,9 +1,9 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import {
   Play, Pause, Square, SkipBack, SkipForward,
-  Maximize, ListVideo, Repeat, Shuffle,
+  Maximize, Repeat, Shuffle,
   Volume2, Volume1, VolumeX, Volume,
-  Camera, Gauge, RatioIcon, Languages, Type,
+  Camera, RatioIcon, Languages, Type, Subtitles,
   ChevronUp, ChevronDown
 } from 'lucide-react';
 import {
@@ -13,12 +13,19 @@ import {
 } from '@/components/ui/popover';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
+import { SubtitleTrack, AudioTrackInfo } from '@/hooks/usePlayerSubtitles';
 
 interface PlayerControlsProps {
   videoRef: React.RefObject<HTMLVideoElement>;
   onPrev: () => void;
   onNext: () => void;
   onStop: () => void;
+  subtitleTracks?: SubtitleTrack[];
+  activeSubtitle?: number;
+  onSetActiveSubtitle?: (index: number) => void;
+  audioTracks?: AudioTrackInfo[];
+  activeAudioTrack?: number;
+  onSetActiveAudioTrack?: (index: number) => void;
 }
 
 const SPEED_OPTIONS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 3, 4];
@@ -40,7 +47,11 @@ function formatTime(seconds: number): string {
   return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
 }
 
-export function PlayerControls({ videoRef, onPrev, onNext, onStop }: PlayerControlsProps) {
+export function PlayerControls({
+  videoRef, onPrev, onNext, onStop,
+  subtitleTracks = [], activeSubtitle = -1, onSetActiveSubtitle,
+  audioTracks = [], activeAudioTrack = 0, onSetActiveAudioTrack,
+}: PlayerControlsProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -52,7 +63,6 @@ export function PlayerControls({ videoRef, onPrev, onNext, onStop }: PlayerContr
   const [abLoop, setAbLoop] = useState<{ a: number | null; b: number | null }>({ a: null, b: null });
   const [aspect, setAspect] = useState('auto');
   const [volumeBoost, setVolumeBoost] = useState(100);
-  const [audioTracks, setAudioTracks] = useState<{ id: number; label: string; language: string; enabled: boolean }[]>([]);
   const [subtitleSize, setSubtitleSize] = useState(100);
   const [isSeeking, setIsSeeking] = useState(false);
   const [showRemaining, setShowRemaining] = useState(false);
@@ -83,7 +93,6 @@ export function PlayerControls({ videoRef, onPrev, onNext, onStop }: PlayerContr
     el.addEventListener('loadedmetadata', onDur);
     el.addEventListener('durationchange', onDur);
     el.addEventListener('volumechange', onVol);
-    // Init
     if (el.duration) setDuration(el.duration);
     setIsPlaying(!el.paused);
     setVolume(Math.round(el.volume * 100));
@@ -112,25 +121,6 @@ export function PlayerControls({ videoRef, onPrev, onNext, onStop }: PlayerContr
       sourceRef.current = source;
       gainNodeRef.current = gain;
     } catch (e) { console.warn('Audio boost init failed:', e); }
-  }, [videoRef]);
-
-  // Audio tracks detection
-  useEffect(() => {
-    const el = videoRef.current;
-    if (!el) return;
-    const detect = () => {
-      const at = (el as any).audioTracks;
-      if (at && at.length > 0) {
-        const tracks: typeof audioTracks = [];
-        for (let i = 0; i < at.length; i++) {
-          tracks.push({ id: i, label: at[i].label || `Track ${i + 1}`, language: at[i].language || 'unknown', enabled: at[i].enabled });
-        }
-        setAudioTracks(tracks);
-      }
-    };
-    el.addEventListener('loadedmetadata', detect);
-    detect();
-    return () => el.removeEventListener('loadedmetadata', detect);
   }, [videoRef]);
 
   // A-B Loop
@@ -223,13 +213,6 @@ export function PlayerControls({ videoRef, onPrev, onNext, onStop }: PlayerContr
     link.click();
   }, [videoRef]);
 
-  const switchAudioTrack = useCallback((trackId: string) => {
-    const at = (videoRef.current as any)?.audioTracks;
-    if (!at) return;
-    for (let i = 0; i < at.length; i++) at[i].enabled = i === parseInt(trackId);
-    setAudioTracks(prev => prev.map((t, i) => ({ ...t, enabled: i === parseInt(trackId) })));
-  }, [videoRef]);
-
   // Seekbar interaction
   const handleSeekbarClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     const el = videoRef.current;
@@ -295,7 +278,7 @@ export function PlayerControls({ videoRef, onPrev, onNext, onStop }: PlayerContr
 
   return (
     <div className="flex flex-col select-none bg-black/90 border-t border-white/10">
-      {/* Seekbar - VLC style thin bar */}
+      {/* Seekbar */}
       <div className="px-1 pt-1">
         <div className="flex items-center gap-2 text-xs text-white/70">
           <button
@@ -312,7 +295,6 @@ export function PlayerControls({ videoRef, onPrev, onNext, onStop }: PlayerContr
             onMouseMove={handleSeekbarHover}
             onMouseLeave={() => setHoverTime(null)}
           >
-            {/* Buffered range */}
             <div
               className="absolute top-0 left-0 h-full rounded-sm"
               style={{ width: `${buffered}%`, background: 'rgba(255,255,255,0.15)' }}
@@ -325,7 +307,6 @@ export function PlayerControls({ videoRef, onPrev, onNext, onStop }: PlayerContr
               className="absolute top-1/2 -translate-y-1/2 h-3 w-3 rounded-full border border-white/30 bg-primary"
               style={{ left: `calc(${progress}% - 6px)` }}
             />
-            {/* Hover time tooltip */}
             {hoverTime !== null && (
               <div
                 className="absolute -top-7 -translate-x-1/2 bg-[#333] text-white text-[10px] px-1.5 py-0.5 rounded pointer-events-none whitespace-nowrap"
@@ -339,69 +320,39 @@ export function PlayerControls({ videoRef, onPrev, onNext, onStop }: PlayerContr
         </div>
       </div>
 
-      {/* Transport controls - VLC bottom bar */}
+      {/* Transport controls */}
       <div className="flex items-center gap-0.5 px-1 py-0.5">
-        {/* Play / Pause */}
-        <button
-          onClick={togglePlay}
-          className="p-1.5 rounded hover:bg-white/10 transition-colors"
-          title={isPlaying ? 'Pause' : 'Play'}
-        >
-          {isPlaying
-            ? <Pause className="h-4 w-4 text-white/80" />
-            : <Play className="h-4 w-4 text-white/80" />
-          }
+        <button onClick={togglePlay} className="p-1.5 rounded hover:bg-white/10 transition-colors" title={isPlaying ? 'Pause' : 'Play'}>
+          {isPlaying ? <Pause className="h-4 w-4 text-white/80" /> : <Play className="h-4 w-4 text-white/80" />}
         </button>
-
-        {/* Previous */}
         <button onClick={onPrev} className="p-1.5 rounded hover:bg-white/10 transition-colors" title="Previous">
           <SkipBack className="h-3.5 w-3.5 text-white/80" />
         </button>
-
-        {/* Stop */}
         <button onClick={onStop} className="p-1.5 rounded hover:bg-white/10 transition-colors" title="Stop">
           <Square className="h-3.5 w-3.5 text-white/80" />
         </button>
-
-        {/* Next */}
         <button onClick={onNext} className="p-1.5 rounded hover:bg-white/10 transition-colors" title="Next">
           <SkipForward className="h-3.5 w-3.5 text-white/80" />
         </button>
-
-        {/* Fullscreen */}
         <button onClick={toggleFullscreen} className="p-1.5 rounded hover:bg-white/10 transition-colors" title="Fullscreen (F)">
           <Maximize className="h-3.5 w-3.5 text-white/80" />
         </button>
 
-        {/* Playlist / Extended controls separator */}
         <div className="flex items-center gap-0.5 ml-1 border-l pl-1 border-white/20">
-          {/* A-B Loop */}
-          <button
-            onClick={toggleAbLoop}
-            className="p-1.5 rounded hover:bg-white/10 transition-colors"
-            title="A-B Loop (L)"
-            style={{ color: abLoop.a !== null ? 'hsl(var(--primary))' : 'rgba(255,255,255,0.8)' }}
-          >
+          <button onClick={toggleAbLoop} className="p-1.5 rounded hover:bg-white/10 transition-colors" title="A-B Loop (L)"
+            style={{ color: abLoop.a !== null ? 'hsl(var(--primary))' : 'rgba(255,255,255,0.8)' }}>
             <Repeat className="h-3.5 w-3.5" />
           </button>
-
-          {/* Shuffle */}
-          <button
-            onClick={() => setIsShuffled(!isShuffled)}
-            className="p-1.5 rounded hover:bg-white/10 transition-colors"
-            title="Shuffle"
-            style={{ color: isShuffled ? 'hsl(var(--primary))' : 'rgba(255,255,255,0.8)' }}
-          >
+          <button onClick={() => setIsShuffled(!isShuffled)} className="p-1.5 rounded hover:bg-white/10 transition-colors" title="Shuffle"
+            style={{ color: isShuffled ? 'hsl(var(--primary))' : 'rgba(255,255,255,0.8)' }}>
             <Shuffle className="h-3.5 w-3.5" />
           </button>
-
-          {/* Screenshot */}
           <button onClick={takeScreenshot} className="p-1.5 rounded hover:bg-white/10 transition-colors" title="Screenshot (Ctrl+S)">
             <Camera className="h-3.5 w-3.5 text-white/80" />
           </button>
         </div>
 
-        {/* Speed popover */}
+        {/* Speed */}
         <Popover>
           <PopoverTrigger asChild>
             <button className="p-1.5 rounded hover:bg-white/10 transition-colors text-[11px] font-mono ml-1" style={{ color: speed !== 1 ? 'hsl(var(--primary))' : 'rgba(255,255,255,0.8)' }}>
@@ -437,24 +388,51 @@ export function PlayerControls({ videoRef, onPrev, onNext, onStop }: PlayerContr
           </PopoverContent>
         </Popover>
 
+        {/* Subtitles */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <button className="p-1.5 rounded hover:bg-white/10 transition-colors" title="Subtitles"
+              style={{ color: activeSubtitle >= 0 ? 'hsl(var(--primary))' : 'rgba(255,255,255,0.8)' }}>
+              <Subtitles className="h-3.5 w-3.5" />
+            </button>
+          </PopoverTrigger>
+          <PopoverContent className="w-48 p-2" side="top">
+            <p className="text-xs font-medium mb-2 text-muted-foreground">Subtitles</p>
+            <Button variant={activeSubtitle === -1 ? 'default' : 'ghost'} size="sm" className="h-7 text-xs w-full justify-start"
+              onClick={() => onSetActiveSubtitle?.(-1)}>
+              Off
+            </Button>
+            {subtitleTracks.map(s => (
+              <Button key={s.index} variant={activeSubtitle === s.index ? 'default' : 'ghost'} size="sm" className="h-7 text-xs w-full justify-start"
+                onClick={() => onSetActiveSubtitle?.(s.index)}>
+                {s.language}
+              </Button>
+            ))}
+            {subtitleTracks.length === 0 && (
+              <p className="text-xs text-muted-foreground py-1">No subtitles found</p>
+            )}
+          </PopoverContent>
+        </Popover>
+
         {/* Audio tracks */}
-        {audioTracks.length > 1 && (
-          <Popover>
-            <PopoverTrigger asChild>
-              <button className="p-1.5 rounded hover:bg-white/10 transition-colors" title="Audio Track">
-                <Languages className="h-3.5 w-3.5 text-white/80" />
-              </button>
-            </PopoverTrigger>
-            <PopoverContent className="w-48 p-2" side="top">
-              <p className="text-xs font-medium mb-2 text-muted-foreground">Audio Track</p>
-              {audioTracks.map(t => (
-                <Button key={t.id} variant={t.enabled ? 'default' : 'ghost'} size="sm" className="h-7 text-xs w-full justify-start" onClick={() => switchAudioTrack(String(t.id))}>
-                  {t.label} ({t.language})
-                </Button>
-              ))}
-            </PopoverContent>
-          </Popover>
-        )}
+        <Popover>
+          <PopoverTrigger asChild>
+            <button className="p-1.5 rounded hover:bg-white/10 transition-colors" title="Audio Track">
+              <Languages className="h-3.5 w-3.5 text-white/80" />
+            </button>
+          </PopoverTrigger>
+          <PopoverContent className="w-48 p-2" side="top">
+            <p className="text-xs font-medium mb-2 text-muted-foreground">Audio Track</p>
+            {audioTracks.length > 0 ? audioTracks.map(t => (
+              <Button key={t.index} variant={t.index === activeAudioTrack ? 'default' : 'ghost'} size="sm" className="h-7 text-xs w-full justify-start"
+                onClick={() => onSetActiveAudioTrack?.(t.index)}>
+                {t.label} ({t.language})
+              </Button>
+            )) : (
+              <p className="text-xs text-muted-foreground py-1">No additional audio tracks detected</p>
+            )}
+          </PopoverContent>
+        </Popover>
 
         {/* Subtitle size */}
         <Popover>
@@ -473,7 +451,7 @@ export function PlayerControls({ videoRef, onPrev, onNext, onStop }: PlayerContr
         {/* Spacer */}
         <div className="flex-1" />
 
-        {/* Volume - VLC style: icon + horizontal slider + percentage */}
+        {/* Volume */}
         <div className="flex items-center gap-1 mr-1">
           <button onClick={toggleMute} className="p-1 rounded hover:bg-white/10 transition-colors" title="Mute (M)">
             <VolumeIcon className="h-3.5 w-3.5 text-white/80" />
